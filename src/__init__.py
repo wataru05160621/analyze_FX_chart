@@ -1,0 +1,1 @@
+# FX Chart Analyzer Package
