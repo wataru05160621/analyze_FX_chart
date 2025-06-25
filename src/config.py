@@ -44,11 +44,11 @@ CHATGPT_EMAIL = os.getenv("CHATGPT_EMAIL")
 CHATGPT_PASSWORD = os.getenv("CHATGPT_PASSWORD")
 CHATGPT_PROJECT_NAME = os.getenv("CHATGPT_PROJECT_NAME", "FXチャート分析")
 
-# スケジュール設定（cronフォーマット）
+# スケジュール設定（日本時間）
 SCHEDULE_TIMES = [
-    "0 9 * * *",   # 毎日9:00
-    "0 15 * * *",  # 毎日15:00
-    "0 21 * * *"   # 毎日21:00
+    {"hour": 8, "minute": 0},   # 8:00 AM JST
+    {"hour": 15, "minute": 0},  # 3:00 PM JST
+    {"hour": 21, "minute": 0}   # 9:00 PM JST
 ]
 
 # ログ設定

@@ -1,0 +1,50 @@
+name: FX Chart Analysis
+
+on:
+  schedule:
+    # 日本時間 8:00, 15:00, 21:00 に実行
+    # GitHub ActionsはUTCで動作するため、9時間引いた時刻を設定
+    - cron: '0 23 * * *'  # JST 8:00 = UTC 23:00 (前日)
+    - cron: '0 6 * * *'   # JST 15:00 = UTC 6:00
+    - cron: '0 12 * * *'  # JST 21:00 = UTC 12:00
+  workflow_dispatch:  # 手動実行も可能
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        playwright install chromium
+        playwright install-deps
+        
+    - name: Run FX Analysis
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+        NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+        TRADINGVIEW_CUSTOM_URL: ${{ secrets.TRADINGVIEW_CUSTOM_URL }}
+        CHATGPT_EMAIL: ${{ secrets.CHATGPT_EMAIL }}
+        CHATGPT_PASSWORD: ${{ secrets.CHATGPT_PASSWORD }}
+        CHATGPT_PROJECT_NAME: ${{ secrets.CHATGPT_PROJECT_NAME }}
+        USE_WEB_CHATGPT: ${{ secrets.USE_WEB_CHATGPT }}
+        IMGUR_CLIENT_ID: ${{ secrets.IMGUR_CLIENT_ID }}
+      run: |
+        python -m src.main
+        
+    - name: Upload logs
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: analysis-logs
+        path: logs/
