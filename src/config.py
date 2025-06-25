@@ -3,6 +3,10 @@
 """
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# .envファイルを読み込み
+load_dotenv()
 
 # プロジェクトのルートディレクトリ
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -32,7 +36,8 @@ PRICE_ACTION_PDF = PROJECT_ROOT / "doc" / "プライスアクションの原則.
 ANALYSIS_PROMPT = "プロジェクトファイルを参考に、画像について環境認識、トレードプランの作成をしてください。"
 
 # 分析モード
-USE_WEB_CHATGPT = os.getenv("USE_WEB_CHATGPT", "true").lower() == "true"
+USE_WEB_CHATGPT_STR = os.getenv("USE_WEB_CHATGPT", "true")
+USE_WEB_CHATGPT = USE_WEB_CHATGPT_STR.lower() == "true" if USE_WEB_CHATGPT_STR else True
 
 # ChatGPT設定
 CHATGPT_MODEL = "gpt-4o"  # または "gpt-4-vision-preview"
