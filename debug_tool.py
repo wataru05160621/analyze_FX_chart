@@ -85,9 +85,10 @@ def test_dependencies():
     
     try:
         import boto3
-        print("✅ boto3: OK (オプション)")
+        print("✅ boto3: OK")
     except ImportError:
-        print("⚠️ boto3: 不足 (オプション)")
+        missing_deps.append("boto3")
+        print("❌ boto3: 不足")
     
     if missing_deps:
         print(f"\n❌ 不足している依存関係: {', '.join(missing_deps)}")
@@ -110,6 +111,46 @@ async def test_scraper_basic():
         return True
     except Exception as e:
         print(f"❌ スクレイパーテストエラー: {e}")
+        return False
+
+async def test_aws_s3():
+    """実際AWS S3への接続テスト"""
+    print("\n📏 AWS S3接続テスト...")
+    try:
+        import boto3
+        from botocore.exceptions import NoCredentialsError, ClientError
+        
+        # S3クライアントを作成
+        s3_client = boto3.client('s3')
+        
+        # バケット一覧を取得（権限チェック）
+        response = s3_client.list_buckets()
+        print(f"✅ AWS S3接続成功: {len(response['Buckets'])}個のバケットがあります")
+        
+        # 設定されたバケットのチェック
+        from src.config import AWS_S3_BUCKET
+        if AWS_S3_BUCKET and AWS_S3_BUCKET != "fx-analyzer-screenshots-dev":
+            try:
+                s3_client.head_bucket(Bucket=AWS_S3_BUCKET)
+                print(f"✅ 設定されたバケット '{AWS_S3_BUCKET}' にアクセス可能")
+            except ClientError as e:
+                if e.response['Error']['Code'] == '404':
+                    print(f"⚠️ バケット '{AWS_S3_BUCKET}' が存在しません")
+                else:
+                    print(f"⚠️ バケット '{AWS_S3_BUCKET}' へのアクセスエラー: {e}")
+        
+        return True
+        
+    except NoCredentialsError:
+        print("❌ AWS認証情報が設定されていません")
+        print("   AWS CLIで 'aws configure' を実行するか、")
+        print("   環境変数でAWS_ACCESS_KEY_IDとAWS_SECRET_ACCESS_KEYを設定してください")
+        return False
+    except ImportError:
+        print("⚠️ boto3パッケージがインストールされていません")
+        return False
+    except Exception as e:
+        print(f"❌ AWS S3テストエラー: {e}")
         return False
 
 async def dry_run():
@@ -173,6 +214,7 @@ async def main():
         ("設定テスト", test_configuration),
         ("インポートテスト", test_imports),
         ("依存関係テスト", test_dependencies),
+        ("AWS S3テスト", test_aws_s3),
         ("スクレイパーテスト", test_scraper_basic),
         ("ドライラン", dry_run)
     ]

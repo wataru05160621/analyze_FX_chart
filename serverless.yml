@@ -1,0 +1,109 @@
+service: fx-chart-analyzer
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: python3.11
+  architecture: x86_64
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'ap-northeast-1'}
+  memorySize: 2048
+  timeout: 900  # 15分
+  
+  environment:
+    ENVIRONMENT: ${self:provider.stage}
+    OPENAI_API_KEY: ${env:OPENAI_API_KEY}
+    NOTION_API_KEY: ${env:NOTION_API_KEY}
+    NOTION_DATABASE_ID: ${env:NOTION_DATABASE_ID}
+    AWS_S3_BUCKET: ${self:custom.bucketName}
+    TRADINGVIEW_CUSTOM_URL: ${env:TRADINGVIEW_CUSTOM_URL, 'https://jp.tradingview.com/chart/'}
+    USE_WEB_CHATGPT: "false"
+    AWS_REGION: ${self:provider.region}
+    PYTHONPATH: /var/task:/opt/python
+    PLAYWRIGHT_BROWSERS_PATH: /opt/playwright
+    
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:PutObjectAcl
+            - s3:GetObject
+          Resource: "arn:aws:s3:::${self:custom.bucketName}/*"
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: "*"
+
+custom:
+  bucketName: fx-analyzer-images-${self:provider.stage}
+  pythonRequirements:
+    dockerizePip: true
+    fileName: requirements-lambda.txt
+    layer: true
+    slim: true
+    strip: false
+
+plugins:
+  - serverless-python-requirements
+
+functions:
+  analyzer:
+    name: fx-analyzer-${self:provider.stage}
+    handler: lambda_handler.lambda_handler
+    layers:
+      - ${cf:fx-chart-analyzer-deps-${self:provider.stage}.PythonRequirementsLambdaLayerExport}
+    events:
+      # 日本時間 8:00, 15:00, 21:00 (UTC 23:00, 6:00, 12:00)
+      - schedule:
+          rate: cron(0 23 * * ? *)  # JST 8:00
+          name: fx-analyzer-morning-${self:provider.stage}
+          description: "FX Analysis at 8:00 AM JST"
+      - schedule:
+          rate: cron(0 6 * * ? *)   # JST 15:00
+          name: fx-analyzer-afternoon-${self:provider.stage}
+          description: "FX Analysis at 3:00 PM JST"
+      - schedule:
+          rate: cron(0 12 * * ? *)  # JST 21:00
+          name: fx-analyzer-evening-${self:provider.stage}
+          description: "FX Analysis at 9:00 PM JST"
+          
+  test:
+    name: fx-analyzer-test-${self:provider.stage}
+    handler: lambda_handler.test_handler
+    layers:
+      - ${cf:fx-chart-analyzer-deps-${self:provider.stage}.PythonRequirementsLambdaLayerExport}
+
+resources:
+  Resources:
+    ImagesBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.bucketName}
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: true
+          BlockPublicPolicy: true
+          IgnorePublicAcls: true
+          RestrictPublicBuckets: true
+        VersioningConfiguration:
+          Status: Enabled
+        LifecycleConfiguration:
+          Rules:
+            - Id: DeleteOldImages
+              Status: Enabled
+              ExpirationInDays: 30
+              
+  Outputs:
+    ImagesBucketName:
+      Value: !Ref ImagesBucket
+      Export:
+        Name: ${self:service}-${self:provider.stage}-images-bucket
+        
+    AnalyzerFunctionArn:
+      Value: !GetAtt AnalyzerLambdaFunction.Arn
+      Export:
+        Name: ${self:service}-${self:provider.stage}-analyzer-function

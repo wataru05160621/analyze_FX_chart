@@ -1,0 +1,14 @@
+{
+  "source": "aws.events",
+  "detail-type": "Scheduled Event",
+  "detail": {
+    "state": "SUCCEEDED"
+  },
+  "region": "ap-northeast-1",
+  "time": "2024-01-01T08:00:00Z",
+  "account": "123456789012",
+  "id": "test-event-id",
+  "resources": [
+    "arn:aws:events:ap-northeast-1:123456789012:rule/fx-analyzer-morning-dev"
+  ]
+}

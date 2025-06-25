@@ -1,0 +1,184 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FX Chart Analyzer - Serverless Application
+
+Globals:
+  Function:
+    Timeout: 900  # 15分（最大実行時間）
+    MemorySize: 2048  # Playwright用に大きめのメモリ
+    Runtime: python3.11
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        PYTHONPATH: /var/task:/opt/python
+        PLAYWRIGHT_BROWSERS_PATH: /opt/playwright
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+    Description: Environment name
+    
+  OpenAIAPIKey:
+    Type: String
+    NoEcho: true
+    Description: OpenAI API Key
+    
+  NotionAPIKey:
+    Type: String
+    NoEcho: true
+    Description: Notion API Key
+    
+  NotionDatabaseId:
+    Type: String
+    Description: Notion Database ID
+    
+  S3BucketName:
+    Type: String
+    Description: S3 Bucket for image storage
+    
+  TradingViewURL:
+    Type: String
+    Default: "https://jp.tradingview.com/chart/"
+    Description: Trading View Chart URL
+
+Resources:
+  # S3 Bucket for image storage
+  ImagesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${S3BucketName}-${Environment}"
+      PublicReadPolicy: false
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldImages
+            Status: Enabled
+            ExpirationInDays: 30  # 30日後に削除
+
+  # Lambda Execution Role
+  FXAnalyzerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:PutObjectAcl
+                  - s3:GetObject
+                Resource: !Sub "${ImagesBucket}/*"
+
+  # Main Lambda Function
+  FXAnalyzerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "fx-analyzer-${Environment}"
+      CodeUri: .
+      Handler: lambda_handler.lambda_handler
+      Role: !GetAtt FXAnalyzerRole.Arn
+      Layers:
+        - !Ref PlaywrightLayer
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          OPENAI_API_KEY: !Ref OpenAIAPIKey
+          NOTION_API_KEY: !Ref NotionAPIKey
+          NOTION_DATABASE_ID: !Ref NotionDatabaseId
+          AWS_S3_BUCKET: !Ref ImagesBucket
+          TRADINGVIEW_CUSTOM_URL: !Ref TradingViewURL
+          USE_WEB_CHATGPT: "false"
+          AWS_REGION: !Ref AWS::Region
+      Events:
+        # 日本時間 8:00, 15:00, 21:00 (UTC 23:00, 6:00, 12:00)
+        Morning:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 23 * * ? *)  # JST 8:00
+            Name: !Sub "fx-analyzer-morning-${Environment}"
+            Description: "FX Analysis at 8:00 AM JST"
+        Afternoon:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 6 * * ? *)   # JST 15:00
+            Name: !Sub "fx-analyzer-afternoon-${Environment}"
+            Description: "FX Analysis at 3:00 PM JST"
+        Evening:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 12 * * ? *)  # JST 21:00
+            Name: !Sub "fx-analyzer-evening-${Environment}"
+            Description: "FX Analysis at 9:00 PM JST"
+
+  # Playwright Layer
+  PlaywrightLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub "playwright-layer-${Environment}"
+      Description: Playwright for Lambda
+      ContentUri: layers/playwright/
+      CompatibleRuntimes:
+        - python3.11
+      CompatibleArchitectures:
+        - x86_64
+
+  # CloudWatch Log Group
+  FXAnalyzerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/fx-analyzer-${Environment}"
+      RetentionInDays: 14
+
+  # Test Lambda Function
+  TestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "fx-analyzer-test-${Environment}"
+      CodeUri: .
+      Handler: lambda_handler.test_handler
+      Role: !GetAtt FXAnalyzerRole.Arn
+      Layers:
+        - !Ref PlaywrightLayer
+      Environment:
+        Variables:
+          ENVIRONMENT: !Sub "${Environment}-test"
+          OPENAI_API_KEY: !Ref OpenAIAPIKey
+          NOTION_API_KEY: !Ref NotionAPIKey
+          NOTION_DATABASE_ID: !Ref NotionDatabaseId
+          AWS_S3_BUCKET: !Ref ImagesBucket
+          USE_WEB_CHATGPT: "false"
+          AWS_REGION: !Ref AWS::Region
+
+Outputs:
+  FXAnalyzerFunction:
+    Description: "FX Analyzer Lambda Function ARN"
+    Value: !GetAtt FXAnalyzerFunction.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-FXAnalyzerFunction"
+      
+  ImagesBucket:
+    Description: "S3 Bucket for images"
+    Value: !Ref ImagesBucket
+    Export:
+      Name: !Sub "${AWS::StackName}-ImagesBucket"
+      
+  TestFunction:
+    Description: "Test Lambda Function ARN"  
+    Value: !GetAtt TestFunction.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-TestFunction"
