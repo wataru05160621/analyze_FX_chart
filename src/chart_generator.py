@@ -1,5 +1,5 @@
 """
-Pythonでチャートを生成するモジュール（SMA付き）
+Pythonでチャートを生成するモジュール（EMA付き）
 """
 import yfinance as yf
 import pandas as pd
@@ -11,11 +11,12 @@ import logging
 from typing import Tuple, Optional
 import mplfinance as mpf
 import numpy as np
+import pytz
 
 logger = logging.getLogger(__name__)
 
 class ChartGenerator:
-    """yfinanceとmatplotlibを使用してSMA付きチャートを生成"""
+    """yfinanceとmatplotlibを使用してEMA付きチャートを生成"""
     
     def __init__(self, symbol: str = "USDJPY=X"):
         """
@@ -53,22 +54,22 @@ class ChartGenerator:
             logger.error(f"データ取得エラー: {e}")
             raise
             
-    def calculate_sma(self, data: pd.DataFrame, periods: list = [25, 75, 200]) -> pd.DataFrame:
+    def calculate_ema(self, data: pd.DataFrame, periods: list = [25, 75, 200]) -> pd.DataFrame:
         """
-        SMAを計算
+        EMAを計算
         
         Args:
             data: 価格データ
-            periods: SMAの期間リスト
+            periods: EMAの期間リスト
         """
         for period in periods:
             if len(data) >= period:
-                data[f'SMA{period}'] = data['Close'].rolling(window=period).mean()
-                logger.info(f"SMA{period}を計算しました（データ数: {len(data)}本）")
+                data[f'EMA{period}'] = data['Close'].ewm(span=period).mean()
+                logger.info(f"EMA{period}を計算しました（データ数: {len(data)}本）")
             else:
-                logger.warning(f"データ不足: SMA{period}の計算には{period}本以上のデータが必要です（現在: {len(data)}本）")
+                logger.warning(f"データ不足: EMA{period}の計算には{period}本以上のデータが必要です（現在: {len(data)}本）")
                 # データが不足している場合でも、利用可能な分で計算
-                data[f'SMA{period}'] = data['Close'].rolling(window=min(period, len(data))).mean()
+                data[f'EMA{period}'] = data['Close'].ewm(span=min(period, len(data))).mean()
                 
         return data
         
@@ -78,12 +79,12 @@ class ChartGenerator:
                       periods: list = [25, 75, 200],
                       candle_count: int = 288) -> Path:
         """
-        SMA付きチャートを生成
+        EMA付きチャートを生成
         
         Args:
             timeframe: 時間足（5min, 15min, 30min, 1hour, 4hour, 1day）
             output_dir: 出力ディレクトリ
-            periods: SMAの期間
+            periods: EMAの期間
             
         Returns:
             生成されたチャート画像のパス
@@ -98,7 +99,7 @@ class ChartGenerator:
             "1day": "1d"
         }
         
-        # 期間マッピング（288本+200本SMA用データ=488本以上取得するために十分な期間を設定）
+        # 期間マッピング（288本+200本EMA用データ=488本以上取得するために十分な期間を設定）
         period_map = {
             "5m": "5d",      # 5日間で約1440本（平日のみ）
             "15m": "7d",     # 7日間で約672本
@@ -111,21 +112,31 @@ class ChartGenerator:
         period = period_map.get(interval, "1mo")
         
         try:
-            # データ取得（SMA計算のため余分にデータを取得）
-            max_sma_period = max(periods) if periods else 200
-            required_data_count = candle_count + max_sma_period
+            # データ取得（EMA計算のため余分にデータを取得）
+            max_ema_period = max(periods) if periods else 200
+            required_data_count = candle_count + max_ema_period
             
             data = self.fetch_data(period=period, interval=interval)
             logger.info(f"取得データ数: {len(data)}本")
             
-            # SMA計算（すべてのデータで計算）
-            data = self.calculate_sma(data, periods)
+            # 時刻を日本時間に変換
+            if data.index.tz is None:
+                # タイムゾーン情報がない場合はUTCとして扱う
+                data.index = data.index.tz_localize('UTC')
             
-            # 表示用に指定された本数のローソク足のみを使用（SMAは正しく計算済み）
+            # 日本時間に変換
+            jst = pytz.timezone('Asia/Tokyo')
+            data.index = data.index.tz_convert(jst)
+            logger.info(f"時刻を日本時間に変換しました")
+            
+            # EMA計算（すべてのデータで計算）
+            data = self.calculate_ema(data, periods)
+            
+            # 表示用に指定された本数のローソク足のみを使用（EMAは正しく計算済み）
             if len(data) > candle_count:
                 # 最新のcandle_count本のみを表示用に切り出し
                 data = data.tail(candle_count)
-                logger.info(f"表示用データを最新{candle_count}本に制限しました（SMAは{len(data) + max_sma_period}本で計算済み）")
+                logger.info(f"表示用データを最新{candle_count}本に制限しました（EMAは{len(data) + max_ema_period}本で計算済み）")
             
             # チャート生成
             if output_dir is None:
@@ -135,7 +146,7 @@ class ChartGenerator:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             output_path = output_dir / f"chart_{timeframe}_{timestamp}.png"
             
-            # mplfinanceスタイル設定
+            # mplfinanceスタイル設定（明るい背景）
             mc = mpf.make_marketcolors(
                 up='tab:green',
                 down='tab:red',
@@ -148,25 +159,25 @@ class ChartGenerator:
                 marketcolors=mc,
                 gridstyle=':',
                 y_on_right=True,
-                figcolor='#1e1e1e',
-                facecolor='#1e1e1e',
-                edgecolor='#3a3a3a',
-                gridcolor='#3a3a3a',
+                figcolor='white',
+                facecolor='white',
+                edgecolor='#cccccc',
+                gridcolor='#cccccc',
                 gridaxis='both'
             )
             
-            # SMAプロット設定
+            # EMAプロット設定
             added_plots = []
-            colors = ['gold', 'red', 'darkred']
+            colors = ['green', 'gold', 'red']  # 25EMA(緑), 75EMA(黄), 200EMA(赤)
             
             for i, period in enumerate(periods):
-                if f'SMA{period}' in data.columns:
+                if f'EMA{period}' in data.columns:
                     added_plots.append(
                         mpf.make_addplot(
-                            data[f'SMA{period}'],
+                            data[f'EMA{period}'],
                             color=colors[i % len(colors)],
                             width=2,
-                            label=f'SMA{period}'
+                            label=f'EMA{period}'
                         )
                     )
             
@@ -182,24 +193,31 @@ class ChartGenerator:
                 style=style,
                 addplot=added_plots if added_plots else None,
                 figsize=(width, height),
-                title=f'{self.symbol} - {timeframe} ({len(data)} candles)',
-                ylabel='Price',
+                title=f'{self.symbol} - {timeframe} ({len(data)} candles) JST',
+                ylabel='Price (JPY)',
                 ylabel_lower='',
                 volume=False,
                 returnfig=True,
-                datetime_format='%m/%d %H:%M' if interval in ['5m', '15m', '30m', '60m'] else '%Y/%m/%d',
+                datetime_format='%m/%d %H:%M JST' if interval in ['5m', '15m', '30m', '60m'] else '%Y/%m/%d JST',
                 xrotation=45,
                 tight_layout=True,
                 warn_too_much_data=500  # 警告を抑制
             )
             
-            # 価格軸（Y軸）の目盛りを0.100円刻みに設定
+            # 価格軸（Y軸）の目盛り設定（時間足により刻み幅を変更）
             ax = axes[0]
             y_min, y_max = ax.get_ylim()
-            # 0.1刻みの目盛りを生成
-            y_ticks = np.arange(np.floor(y_min * 10) / 10, np.ceil(y_max * 10) / 10 + 0.1, 0.1)
-            ax.set_yticks(y_ticks)
-            ax.set_yticklabels([f'{y:.3f}' for y in y_ticks])
+            
+            if timeframe == "1hour":
+                # 1時間足は0.5円刻み
+                y_ticks = np.arange(np.floor(y_min * 2) / 2, np.ceil(y_max * 2) / 2 + 0.5, 0.5)
+                ax.set_yticks(y_ticks)
+                ax.set_yticklabels([f'{y:.1f}' for y in y_ticks])
+            else:
+                # その他の時間足は0.1円刻み
+                y_ticks = np.arange(np.floor(y_min * 10) / 10, np.ceil(y_max * 10) / 10 + 0.1, 0.1)
+                ax.set_yticks(y_ticks)
+                ax.set_yticklabels([f'{y:.3f}' for y in y_ticks])
             
             # 時間軸（X軸）の目盛りを調整
             # X軸の範囲を取得
@@ -227,14 +245,14 @@ class ChartGenerator:
                 lines = []
                 labels = []
                 for i, period in enumerate(periods):
-                    if f'SMA{period}' in data.columns:
+                    if f'EMA{period}' in data.columns:
                         line, = ax.plot([], [], color=colors[i % len(colors)], linewidth=2)
                         lines.append(line)
-                        labels.append(f'SMA{period}')
+                        labels.append(f'EMA{period}')
                 ax.legend(lines, labels, loc='upper left')
             
             # 保存
-            plt.savefig(output_path, dpi=150, bbox_inches='tight', facecolor='#1e1e1e')
+            plt.savefig(output_path, dpi=150, bbox_inches='tight', facecolor='white')
             plt.close()
             
             logger.info(f"チャート生成完了: {output_path}")
