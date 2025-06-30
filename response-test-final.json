@@ -1,0 +1,1 @@
+{"statusCode": 500, "body": "{\"status\": \"error\", \"error\": \"'NotionWriter' object has no attribute 'create_fx_analysis_page'\", \"timestamp\": \"2025-06-30T00:14:54.095772\", \"execution_time_seconds\": 17.216714, \"execution_id\": \"7929fd15-f79a-4867-8c12-118f4951f159\", \"event_source\": \"manual\"}"}

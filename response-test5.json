@@ -1,0 +1,1 @@
+{"statusCode": 500, "body": "{\"status\": \"error\", \"error\": \"'NotionWriter' object has no attribute 'create_page'\", \"timestamp\": \"2025-06-30T00:12:57.411665\", \"execution_time_seconds\": 17.210128, \"execution_id\": \"6d4f25db-4043-4bf4-930e-e60a92a969ec\", \"event_source\": \"manual\"}"}

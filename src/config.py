@@ -13,12 +13,15 @@ PROJECT_ROOT = Path(__file__).parent.parent
 
 # API設定
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY")
 NOTION_API_KEY = os.getenv("NOTION_API_KEY")
 NOTION_DATABASE_ID = os.getenv("NOTION_DATABASE_ID")
 
 # Trading View設定
 TRADINGVIEW_URL = "https://jp.tradingview.com/chart/"  # デフォルトURL
 TRADINGVIEW_CUSTOM_URL = os.getenv("TRADINGVIEW_CUSTOM_URL")  # カスタムチャートURL
+TRADINGVIEW_USERNAME = os.getenv("TRADINGVIEW_USERNAME")  # Trading Viewユーザー名
+TRADINGVIEW_PASSWORD = os.getenv("TRADINGVIEW_PASSWORD")  # Trading Viewパスワード
 CHART_SYMBOL = "USDJPY"
 TIMEFRAMES = {
     "5min": "5",
@@ -38,6 +41,7 @@ ANALYSIS_PROMPT = "プロジェクトファイルを参考に、画像につい�
 # 分析モード
 USE_WEB_CHATGPT_STR = os.getenv("USE_WEB_CHATGPT", "true")
 USE_WEB_CHATGPT = USE_WEB_CHATGPT_STR.lower() == "true" if USE_WEB_CHATGPT_STR else True
+ANALYSIS_MODE = os.getenv("ANALYSIS_MODE", "openai")  # openai, claude, web_chatgpt
 
 # ChatGPT設定
 CHATGPT_MODEL = "gpt-4o"  # または "gpt-4-vision-preview"

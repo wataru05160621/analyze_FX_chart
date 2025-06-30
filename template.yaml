@@ -1,168 +1,189 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: FX Chart Analyzer - Serverless Application
+Description: >
+  FX Chart Analyzer
+  
+  AWS Lambda FXチャート分析システム（定時実行・エラー監視機能付き）
 
+# Global settings
 Globals:
   Function:
-    Timeout: 900  # 15分（最大実行時間）
-    MemorySize: 2048  # Playwright用に大きめのメモリ
-    Runtime: python3.11
+    Timeout: 900  # 15分
+    MemorySize: 1024
+    Runtime: python3.13
     Architectures:
       - x86_64
     Environment:
       Variables:
-        PYTHONPATH: /var/task:/opt/python
-        PLAYWRIGHT_BROWSERS_PATH: /opt/playwright
+        SECRET_NAME: !Ref FXAnalyzerSecrets
+        SNS_ALERT_TOPIC_ARN: !Ref AlertTopic
 
 Parameters:
   Environment:
     Type: String
-    Default: dev
-    AllowedValues: [dev, staging, prod]
-    Description: Environment name
-    
-  OpenAIAPIKey:
+    Default: prod
+    AllowedValues:
+      - dev
+      - prod
+    Description: 環境（dev/prod）
+  
+  AlertEmail:
     Type: String
-    NoEcho: true
-    Description: OpenAI API Key
-    
-  NotionAPIKey:
-    Type: String
-    NoEcho: true
-    Description: Notion API Key
-    
-  NotionDatabaseId:
-    Type: String
-    Description: Notion Database ID
-    
-  S3BucketName:
-    Type: String
-    Description: S3 Bucket for image storage
-    
-  TradingViewURL:
-    Type: String
-    Default: "https://jp.tradingview.com/chart/"
-    Description: Trading View Chart URL
+    Description: アラート通知先メールアドレス
+    Default: "your-email@example.com"
 
 Resources:
-  # S3 Bucket for image storage
-  ImagesBucket:
+  # Lambda関数
+  FXAnalyzerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub fx-analyzer-${Environment}
+      CodeUri: .
+      Handler: lambda_handler.lambda_handler
+      DeadLetterQueue:
+        Type: SNS
+        TargetArn: !Ref AlertTopic
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+      Policies:
+        - SecretsManagerReadWrite
+        - CloudWatchPutMetricPolicy: {}
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt AlertTopic.TopicName
+        - S3WritePolicy:
+            BucketName: !Ref ChartStorageBucket
+      Events:
+        # 定時実行スケジュール
+        MorningSchedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 23 * * ? *)  # JST 8:00 AM (UTC 23:00 前日)
+            Name: !Sub fx-analyzer-morning-${Environment}
+            Description: "朝の分析実行"
+            Input: '{"source": "schedule", "time": "morning"}'
+        
+        AfternoonSchedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 6 * * ? *)   # JST 3:00 PM (UTC 6:00)
+            Name: !Sub fx-analyzer-afternoon-${Environment}
+            Description: "午後の分析実行"
+            Input: '{"source": "schedule", "time": "afternoon"}'
+        
+        EveningSchedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 12 * * ? *)  # JST 9:00 PM (UTC 12:00)
+            Name: !Sub fx-analyzer-evening-${Environment}
+            Description: "夜間の分析実行"
+            Input: '{"source": "schedule", "time": "evening"}'
+
+  # S3バケット（チャート画像保存用）
+  ChartStorageBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "${S3BucketName}-${Environment}"
-      PublicReadPolicy: false
+      BucketName: !Sub fx-analyzer-charts-${Environment}-${AWS::AccountId}
       VersioningConfiguration:
         Status: Enabled
       LifecycleConfiguration:
         Rules:
-          - Id: DeleteOldImages
+          - Id: DeleteOldCharts
             Status: Enabled
             ExpirationInDays: 30  # 30日後に削除
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
 
-  # Lambda Execution Role
-  FXAnalyzerRole:
-    Type: AWS::IAM::Role
+  # Secrets Manager
+  FXAnalyzerSecrets:
+    Type: AWS::SecretsManager::Secret
     Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: S3Access
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - s3:PutObject
-                  - s3:PutObjectAcl
-                  - s3:GetObject
-                Resource: !Sub "${ImagesBucket}/*"
+      Name: !Sub fx-analyzer-secrets-${Environment}
+      Description: FXアナライザー用のAPIキーとシークレット
+      SecretString: !Sub |
+        {
+          "OPENAI_API_KEY": "sk-your-openai-key-here",
+          "CLAUDE_API_KEY": "sk-ant-your-claude-key-here",
+          "NOTION_API_KEY": "ntn_your-notion-key-here",
+          "NOTION_DATABASE_ID": "your-notion-database-id-here",
+          "ANALYSIS_MODE": "openai",
+          "USE_WEB_CHATGPT": "false"
+        }
 
-  # Main Lambda Function
-  FXAnalyzerFunction:
-    Type: AWS::Serverless::Function
+  # SNSトピック（アラート用）
+  AlertTopic:
+    Type: AWS::SNS::Topic
     Properties:
-      FunctionName: !Sub "fx-analyzer-${Environment}"
-      CodeUri: .
-      Handler: lambda_handler.lambda_handler
-      Role: !GetAtt FXAnalyzerRole.Arn
-      Layers:
-        - !Ref PlaywrightLayer
-      Environment:
-        Variables:
-          ENVIRONMENT: !Ref Environment
-          OPENAI_API_KEY: !Ref OpenAIAPIKey
-          NOTION_API_KEY: !Ref NotionAPIKey
-          NOTION_DATABASE_ID: !Ref NotionDatabaseId
-          AWS_S3_BUCKET: !Ref ImagesBucket
-          TRADINGVIEW_CUSTOM_URL: !Ref TradingViewURL
-          USE_WEB_CHATGPT: "false"
-          AWS_REGION: !Ref AWS::Region
-      Events:
-        # 日本時間 8:00, 15:00, 21:00 (UTC 23:00, 6:00, 12:00)
-        Morning:
-          Type: Schedule
-          Properties:
-            Schedule: cron(0 23 * * ? *)  # JST 8:00
-            Name: !Sub "fx-analyzer-morning-${Environment}"
-            Description: "FX Analysis at 8:00 AM JST"
-        Afternoon:
-          Type: Schedule
-          Properties:
-            Schedule: cron(0 6 * * ? *)   # JST 15:00
-            Name: !Sub "fx-analyzer-afternoon-${Environment}"
-            Description: "FX Analysis at 3:00 PM JST"
-        Evening:
-          Type: Schedule
-          Properties:
-            Schedule: cron(0 12 * * ? *)  # JST 21:00
-            Name: !Sub "fx-analyzer-evening-${Environment}"
-            Description: "FX Analysis at 9:00 PM JST"
+      TopicName: !Sub fx-analyzer-alerts-${Environment}
+      DisplayName: FXアナライザーアラート
 
-  # Playwright Layer
-  PlaywrightLayer:
-    Type: AWS::Serverless::LayerVersion
+  # SNSサブスクリプション（メール通知）
+  AlertEmailSubscription:
+    Type: AWS::SNS::Subscription
     Properties:
-      LayerName: !Sub "playwright-layer-${Environment}"
-      Description: Playwright for Lambda
-      ContentUri: layers/playwright/
-      CompatibleRuntimes:
-        - python3.11
-      CompatibleArchitectures:
-        - x86_64
+      TopicArn: !Ref AlertTopic
+      Protocol: email
+      Endpoint: !Ref AlertEmail
 
   # CloudWatch Log Group
   FXAnalyzerLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/aws/lambda/fx-analyzer-${Environment}"
+      LogGroupName: !Sub /aws/lambda/fx-analyzer-${Environment}
       RetentionInDays: 14
 
-  # Test Lambda Function
-  TestFunction:
-    Type: AWS::Serverless::Function
+  # CloudWatch Alarms
+  ErrorRateAlarm:
+    Type: AWS::CloudWatch::Alarm
     Properties:
-      FunctionName: !Sub "fx-analyzer-test-${Environment}"
-      CodeUri: .
-      Handler: lambda_handler.test_handler
-      Role: !GetAtt FXAnalyzerRole.Arn
-      Layers:
-        - !Ref PlaywrightLayer
-      Environment:
-        Variables:
-          ENVIRONMENT: !Sub "${Environment}-test"
-          OPENAI_API_KEY: !Ref OpenAIAPIKey
-          NOTION_API_KEY: !Ref NotionAPIKey
-          NOTION_DATABASE_ID: !Ref NotionDatabaseId
-          AWS_S3_BUCKET: !Ref ImagesBucket
-          USE_WEB_CHATGPT: "false"
-          AWS_REGION: !Ref AWS::Region
+      AlarmName: !Sub fx-analyzer-error-rate-${Environment}
+      AlarmDescription: FXアナライザーのエラー率監視
+      MetricName: ErrorRate
+      Namespace: FXAnalyzer
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 0.5
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref AlertTopic
+      TreatMissingData: notBreaching
+
+  ExecutionTimeAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub fx-analyzer-execution-time-${Environment}
+      AlarmDescription: FXアナライザーの実行時間監視
+      MetricName: ExecutionTime
+      Namespace: FXAnalyzer
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 600  # 10分
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref AlertTopic
+
+  LambdaErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub fx-analyzer-lambda-errors-${Environment}
+      AlarmDescription: Lambda関数のエラー監視
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref FXAnalyzerFunction
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref AlertTopic
 
 Outputs:
   FXAnalyzerFunction:
@@ -171,14 +192,8 @@ Outputs:
     Export:
       Name: !Sub "${AWS::StackName}-FXAnalyzerFunction"
       
-  ImagesBucket:
-    Description: "S3 Bucket for images"
-    Value: !Ref ImagesBucket
+  ChartStorageBucket:
+    Description: "S3 Bucket for chart images"
+    Value: !Ref ChartStorageBucket
     Export:
-      Name: !Sub "${AWS::StackName}-ImagesBucket"
-      
-  TestFunction:
-    Description: "Test Lambda Function ARN"  
-    Value: !GetAtt TestFunction.Arn
-    Export:
-      Name: !Sub "${AWS::StackName}-TestFunction"
+      Name: !Sub "${AWS::StackName}-ChartStorageBucket"

@@ -39,14 +39,16 @@ class NotionWriter:
                     }
                 },
                 "Status": {
-                    "select": {
+                    "status": {
                         "name": "完了"
                     }
                 },
                 "Currency": {
-                    "select": {
-                        "name": "USD/JPY"
-                    }
+                    "multi_select": [
+                        {
+                            "name": "USD/JPY"
+                        }
+                    ]
                 }
             }
             
@@ -202,12 +204,19 @@ class NotionWriter:
             
     def _upload_image(self, image_path: Path) -> str:
         """画像をアップロードしてURLを返す"""
+        logger.info(f"画像アップロード開始: {image_path}")
         uploader = get_uploader()
         
         if uploader:
+            logger.info(f"アップローダー取得成功: {type(uploader).__name__}")
             url = uploader.upload(image_path)
             if url:
+                logger.info(f"画像アップロード成功: {url}")
                 return url
+            else:
+                logger.error("画像アップロードに失敗しました")
+        else:
+            logger.warning("アップローダーが取得できませんでした")
         
         # アップローダーが設定されていない場合のフォールバック
         logger.warning(f"画像アップロードが設定されていません。ローカルパスを使用: {image_path}")

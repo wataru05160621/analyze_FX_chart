@@ -1,0 +1,1 @@
+{"statusCode": 500, "body": "{\"status\": \"error\", \"error\": \"設定エラー:\\nCLAUDE_API_KEYが設定されていません\\nNOTION_API_KEYが設定されていません\\nNOTION_DATABASE_IDが設定されていません\", \"timestamp\": \"2025-06-30T00:05:03.154751\", \"execution_time_seconds\": 2.590653, \"execution_id\": \"64c22742-a910-4f98-a76c-3d266ae31303\", \"event_source\": \"manual\"}"}

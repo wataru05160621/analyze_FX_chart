@@ -52,6 +52,7 @@ def setup_logger(
     use_json: bool = False
 ) -> logging.Logger:
     """ロガーをセットアップ"""
+    import os
     
     logger = logging.getLogger(name)
     logger.setLevel(level)
@@ -74,34 +75,49 @@ def setup_logger(
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
     
-    # ファイルハンドラー
-    if log_file is None:
-        log_file = LOG_FILE
-        
-    LOG_DIR.mkdir(exist_ok=True)
+    # Lambda環境チェック
+    is_lambda = os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is not None
     
-    # ローテーティングファイルハンドラー（10MB、5世代）
-    file_handler = logging.handlers.RotatingFileHandler(
-        log_file,
-        maxBytes=10 * 1024 * 1024,  # 10MB
-        backupCount=5,
-        encoding='utf-8'
-    )
-    file_handler.setLevel(level)
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
+    if is_lambda:
+        # Lambda環境では/tmpを使用
+        if log_file is None:
+            log_file = Path('/tmp/fx_analysis.log')
+        error_file = Path('/tmp/fx_analyzer_errors.log')
+    else:
+        # ローカル環境
+        if log_file is None:
+            log_file = LOG_FILE
+        LOG_DIR.mkdir(exist_ok=True)
+        error_file = LOG_DIR / f"{name}_errors.log"
+    
+    # ファイルハンドラー（書き込み可能な場合のみ）
+    try:
+        # ローテーティングファイルハンドラー（10MB、5世代）
+        file_handler = logging.handlers.RotatingFileHandler(
+            log_file,
+            maxBytes=10 * 1024 * 1024,  # 10MB
+            backupCount=5,
+            encoding='utf-8'
+        )
+        file_handler.setLevel(level)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+    except (OSError, PermissionError) as e:
+        logger.warning(f"ファイルログ設定スキップ: {e}")
     
     # エラー専用ファイルハンドラー
-    error_file = LOG_DIR / f"{name}_errors.log"
-    error_handler = logging.handlers.RotatingFileHandler(
-        error_file,
-        maxBytes=5 * 1024 * 1024,  # 5MB
-        backupCount=3,
-        encoding='utf-8'
-    )
-    error_handler.setLevel(logging.ERROR)
-    error_handler.setFormatter(formatter)
-    logger.addHandler(error_handler)
+    try:
+        error_handler = logging.handlers.RotatingFileHandler(
+            error_file,
+            maxBytes=5 * 1024 * 1024,  # 5MB
+            backupCount=3,
+            encoding='utf-8'
+        )
+        error_handler.setLevel(logging.ERROR)
+        error_handler.setFormatter(formatter)
+        logger.addHandler(error_handler)
+    except (OSError, PermissionError) as e:
+        logger.warning(f"エラーログ設定スキップ: {e}")
     
     return logger
 

@@ -1,0 +1,1 @@
+{"statusCode": 500, "body": "{\"status\": \"error\", \"error\": \"'ErrorRecorder' object is not callable\", \"timestamp\": \"2025-06-30T00:03:17.490284\", \"execution_time_seconds\": 2.536647, \"execution_id\": \"4768ca77-ed3d-4aa3-97cf-93f8931b395e\"}"}

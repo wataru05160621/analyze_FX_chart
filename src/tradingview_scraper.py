@@ -8,6 +8,7 @@ import logging
 from playwright.async_api import async_playwright, Browser, Page
 from datetime import datetime
 import time
+from src.config import TRADINGVIEW_USERNAME, TRADINGVIEW_PASSWORD
 
 logger = logging.getLogger(__name__)
 
@@ -26,9 +27,23 @@ class TradingViewScraper:
     async def setup(self):
         """ブラウザの初期化"""
         playwright = await async_playwright().start()
+        
+        # Docker環境でのブラウザパス設定
+        browser_args = [
+            '--disable-blink-features=AutomationControlled',
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding'
+        ]
+        
         self.browser = await playwright.chromium.launch(
             headless=True,
-            args=['--disable-blink-features=AutomationControlled']
+            args=browser_args,
+            executable_path=None  # 自動検出を使用
         )
         
         context = await self.browser.new_context(
@@ -46,10 +61,14 @@ class TradingViewScraper:
             logger.info(f"チャートページへ移動: {url}")
             
             await self.page.goto(url, wait_until="networkidle")
-            await self.page.wait_for_timeout(5000)
+            await self.page.wait_for_timeout(8000)  # チャート読み込み待機時間を延長
             
             # ポップアップやCookieバナーを閉じる
             await self._close_popups()
+            
+            # ログインが必要な場合はログイン
+            if TRADINGVIEW_USERNAME and TRADINGVIEW_PASSWORD:
+                await self._login()
             
             logger.info("チャートページの読み込み完了")
             
@@ -77,6 +96,67 @@ class TradingViewScraper:
                     
         except Exception as e:
             logger.debug(f"ポップアップ処理中のエラー（無視）: {e}")
+    
+    async def _login(self):
+        """Trading Viewにログイン"""
+        try:
+            logger.info("Trading Viewへのログインを試行中...")
+            
+            # ログイン画面が既に表示されているかチェック
+            login_form = await self.page.query_selector('form:has(input[type="password"])')
+            
+            if login_form:
+                logger.info("ログインフォームが検出されました")
+                
+                # ユーザー名入力（既に入力されている場合があるので、クリアしてから入力）
+                username_input = await self.page.query_selector('input[name="username"], input[type="text"]:not([type="password"])')
+                if username_input:
+                    await username_input.click()
+                    await username_input.fill("")  # クリア
+                    await username_input.fill(TRADINGVIEW_USERNAME)
+                    await self.page.wait_for_timeout(500)
+                    logger.info("ユーザー名を入力しました")
+                
+                # パスワード入力
+                password_input = await self.page.query_selector('input[type="password"]')
+                if password_input:
+                    await password_input.click()
+                    await password_input.fill("")  # クリア
+                    await password_input.fill(TRADINGVIEW_PASSWORD)
+                    await self.page.wait_for_timeout(500)
+                    logger.info("パスワードを入力しました")
+                
+                # ログインボタンをクリック
+                login_button = await self.page.query_selector('button:has-text("ログイン"), button[type="submit"]')
+                if login_button:
+                    await login_button.click()
+                    logger.info("ログインボタンをクリックしました")
+                    await self.page.wait_for_timeout(5000)  # ログイン処理を待つ
+                    
+                    # ログイン成功の確認
+                    await self.page.wait_for_timeout(3000)
+                    logger.info("Trading Viewへのログイン処理完了")
+            else:
+                # ログインボタンを探す
+                login_button = await self.page.query_selector('button:has-text("ログイン"), button:has-text("Sign in"), [data-name="header-user-menu-sign-in"]')
+                if login_button:
+                    await login_button.click()
+                    await self.page.wait_for_timeout(3000)
+                    
+                    # Eメールでログインを選択
+                    email_login = await self.page.query_selector('button:has-text("Eメール"), button:has-text("Email")')
+                    if email_login:
+                        await email_login.click()
+                        await self.page.wait_for_timeout(2000)
+                    
+                    # 再帰的にログイン処理を実行
+                    await self._login()
+                else:
+                    logger.info("既にログイン済みか、ログインボタンが見つかりません")
+                
+        except Exception as e:
+            logger.warning(f"ログイン処理中のエラー: {e}")
+            # ログインに失敗してもスクリーンショット取得は続行
             
     async def set_timeframe(self, timeframe: str):
         """時間足を設定"""

@@ -1,0 +1,25 @@
+FROM python:3.11-slim
+
+# ワーキングディレクトリの設定
+WORKDIR /app
+
+# Pythonの依存関係をコピーしてインストール
+COPY requirements.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# アプリケーションコードをコピー
+COPY . .
+
+# 必要なディレクトリを作成
+RUN mkdir -p /app/screenshots /app/logs
+
+# ヘルスチェック用スクリプトをコピー
+COPY docker-healthcheck.py /app/
+RUN chmod +x /app/docker-healthcheck.py
+
+# ヘルスチェック設定
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python /app/docker-healthcheck.py
+
+# エントリーポイント設定
+CMD ["python", "-c", "import asyncio; from src.lambda_main import analyze_fx_charts; asyncio.run(analyze_fx_charts())"]

@@ -1,0 +1,1 @@
+{"statusCode": 500, "body": "{\"status\": \"error\", \"error\": \"[Errno 30] Read-only file system: '/var/task/logs/fx_analysis.log'\", \"timestamp\": \"2025-06-30T00:00:47.544667\", \"execution_time_seconds\": 2.69298, \"execution_id\": \"ef8ebb69-5bf9-4551-a90d-b9d45452855d\"}"}

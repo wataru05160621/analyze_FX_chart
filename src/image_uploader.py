@@ -98,35 +98,47 @@ class S3Uploader(ImageUploader):
         try:
             import boto3
             
-            self.s3_client = boto3.client(
-                's3',
-                aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY")
-            )
-            self.bucket_name = os.getenv("AWS_S3_BUCKET")
+            # ECS環境ではIAMロールで認証
+            self.s3_client = boto3.client('s3')
+            self.bucket_name = os.getenv("AWS_S3_BUCKET") or os.getenv("S3_BUCKET_NAME")
             self.region = os.getenv("AWS_REGION", "ap-northeast-1")
         except ImportError:
             logger.warning("boto3パッケージがインストールされていません")
             self.s3_client = None
             
     def upload(self, image_path: Path) -> Optional[str]:
-        """画像をS3にアップロード"""
+        """画像をS3にアップロードして署名付きURLを返す"""
         if not self.s3_client or not self.bucket_name:
+            logger.warning(f"S3設定が不完全です: bucket={self.bucket_name}, client={self.s3_client is not None}")
             return None
             
         try:
-            key = f"fx_charts/{image_path.name}"
+            import datetime
             
+            # タイムスタンプ付きキーを生成
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            key = f"fx_charts/{timestamp}_{image_path.name}"
+            
+            # ファイルをS3にアップロード
             self.s3_client.upload_file(
                 str(image_path),
                 self.bucket_name,
                 key,
-                ExtraArgs={'ContentType': 'image/png'}
+                ExtraArgs={
+                    'ContentType': 'image/png',
+                    'ACL': 'bucket-owner-full-control'  # プライベートアップロード
+                }
             )
             
-            image_url = f"https://{self.bucket_name}.s3.{self.region}.amazonaws.com/{key}"
-            logger.info(f"画像をアップロードしました: {image_url}")
-            return image_url
+            # 署名付きURLを生成（7日間有効）
+            presigned_url = self.s3_client.generate_presigned_url(
+                'get_object',
+                Params={'Bucket': self.bucket_name, 'Key': key},
+                ExpiresIn=604800  # 7日間
+            )
+            
+            logger.info(f"画像をS3にアップロードしました: {key}")
+            return presigned_url
             
         except Exception as e:
             logger.error(f"S3アップロードエラー: {e}")
@@ -135,13 +147,26 @@ class S3Uploader(ImageUploader):
 def get_uploader() -> ImageUploader:
     """設定に基づいて適切なアップローダーを返す"""
     
-    # 優先順位: Cloudinary > Imgur > S3
-    if os.getenv("CLOUDINARY_CLOUD_NAME"):
+    s3_bucket = os.getenv("AWS_S3_BUCKET") or os.getenv("S3_BUCKET_NAME")
+    cloudinary_name = os.getenv("CLOUDINARY_CLOUD_NAME")
+    imgur_id = os.getenv("IMGUR_CLIENT_ID")
+    
+    logger.info(f"アップローダー設定確認: S3={bool(s3_bucket)}, Cloudinary={bool(cloudinary_name)}, Imgur={bool(imgur_id)}")
+    
+    # 優先順位: S3 > Cloudinary > Imgur (ECS環境ではS3を優先)
+    if s3_bucket:
+        logger.info(f"S3Uploaderを使用します: bucket={s3_bucket}")
+        try:
+            return S3Uploader()
+        except Exception as e:
+            logger.error(f"S3Uploader初期化エラー: {e}")
+            return None
+    elif cloudinary_name:
+        logger.info("CloudinaryUploaderを使用します")
         return CloudinaryUploader()
-    elif os.getenv("IMGUR_CLIENT_ID"):
+    elif imgur_id:
+        logger.info("ImgurUploaderを使用します")
         return ImgurUploader()
-    elif os.getenv("AWS_S3_BUCKET"):
-        return S3Uploader()
     else:
         logger.warning("画像アップロード設定がありません")
         return None

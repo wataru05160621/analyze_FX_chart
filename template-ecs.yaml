@@ -1,0 +1,460 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  FX Chart Analyzer - ECS Fargate Version
+  
+  高品質チャート生成対応のECS Fargateベースシステム
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues:
+      - dev
+      - prod
+    Description: 環境（dev/prod）
+  
+  AlertEmail:
+    Type: String
+    Description: アラート通知先メールアドレス
+    Default: "wataru.s.05160621@gmail.com"
+  
+  ImageUri:
+    Type: String
+    Description: ECRイメージURI
+    Default: "455931011903.dkr.ecr.ap-northeast-1.amazonaws.com/fx-analyzer:latest"
+
+Resources:
+  # VPC設定
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub fx-analyzer-vpc-${Environment}
+
+  # パブリックサブネット
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub fx-analyzer-public-subnet-1-${Environment}
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !Select [1, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub fx-analyzer-public-subnet-2-${Environment}
+
+  # インターネットゲートウェイ
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub fx-analyzer-igw-${Environment}
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  # ルートテーブル
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub fx-analyzer-public-rt-${Environment}
+
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet1
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet2
+
+  # セキュリティグループ
+  ECSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub fx-analyzer-ecs-sg-${Environment}
+      GroupDescription: Security group for FX Analyzer ECS tasks
+      VpcId: !Ref VPC
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  # ECR リポジトリ
+  ECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub fx-analyzer-${Environment}
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep last 10 images",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 10
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }
+
+  # ECS Cluster
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub fx-analyzer-cluster-${Environment}
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
+
+  # CloudWatch Log Group
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /ecs/fx-analyzer-${Environment}
+      RetentionInDays: 14
+
+  # ECS タスク実行ロール
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: SecretsManagerAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Ref FXAnalyzerSecrets
+
+  # ECS タスクロール
+  ECSTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: FXAnalyzerTaskPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Ref FXAnalyzerSecrets
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource: !Sub "arn:aws:s3:::${ChartStorageBucket}/*"
+              - Effect: Allow
+                Action:
+                  - cloudwatch:PutMetricData
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: !Ref AlertTopic
+
+  # ECS タスク定義
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub fx-analyzer-${Environment}
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: 1024
+      Memory: 2048
+      ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt ECSTaskRole.Arn
+      ContainerDefinitions:
+        - Name: fx-analyzer
+          Image: !Ref ImageUri
+          Essential: true
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+          Environment:
+            - Name: ENVIRONMENT
+              Value: !Ref Environment
+            - Name: AWS_DEFAULT_REGION
+              Value: !Ref AWS::Region
+            - Name: S3_BUCKET_NAME
+              Value: !Ref ChartStorageBucket
+            - Name: SNS_ALERT_TOPIC_ARN
+              Value: !Ref AlertTopic
+          Secrets:
+            - Name: OPENAI_API_KEY
+              ValueFrom: !Sub "${FXAnalyzerSecrets}:OPENAI_API_KEY::"
+            - Name: CLAUDE_API_KEY
+              ValueFrom: !Sub "${FXAnalyzerSecrets}:CLAUDE_API_KEY::"
+            - Name: NOTION_API_KEY
+              ValueFrom: !Sub "${FXAnalyzerSecrets}:NOTION_API_KEY::"
+            - Name: NOTION_DATABASE_ID
+              ValueFrom: !Sub "${FXAnalyzerSecrets}:NOTION_DATABASE_ID::"
+            - Name: ANALYSIS_MODE
+              ValueFrom: !Sub "${FXAnalyzerSecrets}:ANALYSIS_MODE::"
+          HealthCheck:
+            Command:
+              - CMD-SHELL
+              - "python /app/docker-healthcheck.py"
+            Interval: 60
+            Timeout: 10
+            Retries: 3
+            StartPeriod: 120
+
+  # EventBridge IAM Role
+  EventBridgeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: RunECSTask
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecs:RunTask
+                Resource: !Ref TaskDefinition
+              - Effect: Allow
+                Action:
+                  - iam:PassRole
+                Resource:
+                  - !GetAtt ECSTaskExecutionRole.Arn
+                  - !GetAtt ECSTaskRole.Arn
+
+  # EventBridge スケジュール
+  MorningSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub fx-analyzer-ecs-morning-${Environment}
+      Description: "朝の分析実行 (JST 8:00 AM)"
+      ScheduleExpression: "cron(0 23 * * ? *)"  # UTC 23:00 = JST 8:00 AM
+      State: ENABLED
+      Targets:
+        - Id: "MorningTarget"
+          Arn: !GetAtt ECSCluster.Arn
+          RoleArn: !GetAtt EventBridgeRole.Arn
+          EcsParameters:
+            TaskDefinitionArn: !Ref TaskDefinition
+            LaunchType: FARGATE
+            PlatformVersion: LATEST
+            NetworkConfiguration:
+              AwsVpcConfiguration:
+                SecurityGroups:
+                  - !Ref ECSSecurityGroup
+                Subnets:
+                  - !Ref PublicSubnet1
+                  - !Ref PublicSubnet2
+                AssignPublicIp: ENABLED
+          Input: '{"source": "schedule", "time": "morning"}'
+
+  AfternoonSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub fx-analyzer-ecs-afternoon-${Environment}
+      Description: "午後の分析実行 (JST 3:00 PM)"
+      ScheduleExpression: "cron(0 6 * * ? *)"  # UTC 6:00 = JST 3:00 PM
+      State: ENABLED
+      Targets:
+        - Id: "AfternoonTarget"
+          Arn: !GetAtt ECSCluster.Arn
+          RoleArn: !GetAtt EventBridgeRole.Arn
+          EcsParameters:
+            TaskDefinitionArn: !Ref TaskDefinition
+            LaunchType: FARGATE
+            PlatformVersion: LATEST
+            NetworkConfiguration:
+              AwsVpcConfiguration:
+                SecurityGroups:
+                  - !Ref ECSSecurityGroup
+                Subnets:
+                  - !Ref PublicSubnet1
+                  - !Ref PublicSubnet2
+                AssignPublicIp: ENABLED
+          Input: '{"source": "schedule", "time": "afternoon"}'
+
+  EveningSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub fx-analyzer-ecs-evening-${Environment}
+      Description: "夜間の分析実行 (JST 9:00 PM)"
+      ScheduleExpression: "cron(0 12 * * ? *)"  # UTC 12:00 = JST 9:00 PM
+      State: ENABLED
+      Targets:
+        - Id: "EveningTarget"
+          Arn: !GetAtt ECSCluster.Arn
+          RoleArn: !GetAtt EventBridgeRole.Arn
+          EcsParameters:
+            TaskDefinitionArn: !Ref TaskDefinition
+            LaunchType: FARGATE
+            PlatformVersion: LATEST
+            NetworkConfiguration:
+              AwsVpcConfiguration:
+                SecurityGroups:
+                  - !Ref ECSSecurityGroup
+                Subnets:
+                  - !Ref PublicSubnet1
+                  - !Ref PublicSubnet2
+                AssignPublicIp: ENABLED
+          Input: '{"source": "schedule", "time": "evening"}'
+
+  # S3バケット（チャート画像保存用）
+  ChartStorageBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub fx-analyzer-charts-ecs-${Environment}-${AWS::AccountId}
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldCharts
+            Status: Enabled
+            ExpirationInDays: 30
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # Secrets Manager
+  FXAnalyzerSecrets:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub fx-analyzer-ecs-secrets-${Environment}
+      Description: FXアナライザー(ECS)用のAPIキーとシークレット
+      SecretString: !Sub |
+        {
+          "OPENAI_API_KEY": "sk-your-openai-key-here",
+          "CLAUDE_API_KEY": "sk-ant-your-claude-key-here",
+          "NOTION_API_KEY": "ntn_your-notion-key-here",
+          "NOTION_DATABASE_ID": "your-notion-database-id-here",
+          "ANALYSIS_MODE": "claude",
+          "USE_WEB_CHATGPT": "false"
+        }
+
+  # SNSトピック（アラート用）
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub fx-analyzer-ecs-alerts-${Environment}
+      DisplayName: FXアナライザー(ECS)アラート
+
+  # SNSサブスクリプション
+  AlertEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref AlertTopic
+      Protocol: email
+      Endpoint: !Ref AlertEmail
+
+  # CloudWatch Alarms
+  TaskFailureAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub fx-analyzer-ecs-task-failure-${Environment}
+      AlarmDescription: ECSタスクの失敗監視
+      MetricName: TaskStoppedReason
+      Namespace: AWS/ECS
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: ClusterName
+          Value: !Ref ECSCluster
+      AlarmActions:
+        - !Ref AlertTopic
+
+Outputs:
+  ECSClusterArn:
+    Description: "ECS Cluster ARN"
+    Value: !GetAtt ECSCluster.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-ECSCluster"
+
+  TaskDefinitionArn:
+    Description: "ECS Task Definition ARN"
+    Value: !Ref TaskDefinition
+    Export:
+      Name: !Sub "${AWS::StackName}-TaskDefinition"
+
+  ECRRepositoryUri:
+    Description: "ECR Repository URI"
+    Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRRepository}"
+    Export:
+      Name: !Sub "${AWS::StackName}-ECRRepository"
+
+  ChartStorageBucket:
+    Description: "S3 Bucket for chart images"
+    Value: !Ref ChartStorageBucket
+    Export:
+      Name: !Sub "${AWS::StackName}-ChartStorageBucket"

@@ -1,0 +1,1 @@
+{"statusCode": 500, "body": "{\"status\": \"error\", \"error\": \"No module named 'yfinance'\", \"timestamp\": \"2025-06-29T18:45:00.385314\", \"execution_time_seconds\": 0.152197, \"execution_id\": \"095a7278-a3bc-42c2-893e-334bcc07dc14\"}"}
