@@ -296,7 +296,7 @@ Resources:
     Properties:
       Name: !Sub fx-analyzer-ecs-morning-${Environment}
       Description: "朝の分析実行 (JST 8:00 AM)"
-      ScheduleExpression: "cron(0 23 * * ? *)"  # UTC 23:00 = JST 8:00 AM
+      ScheduleExpression: "cron(0 23 ? * MON-FRI *)"  # UTC 23:00 = JST 8:00 AM (平日のみ)
       State: ENABLED
       Targets:
         - Id: "MorningTarget"
@@ -321,7 +321,7 @@ Resources:
     Properties:
       Name: !Sub fx-analyzer-ecs-afternoon-${Environment}
       Description: "午後の分析実行 (JST 3:00 PM)"
-      ScheduleExpression: "cron(0 6 * * ? *)"  # UTC 6:00 = JST 3:00 PM
+      ScheduleExpression: "cron(0 6 ? * MON-FRI *)"  # UTC 6:00 = JST 3:00 PM (平日のみ)
       State: ENABLED
       Targets:
         - Id: "AfternoonTarget"
@@ -346,7 +346,7 @@ Resources:
     Properties:
       Name: !Sub fx-analyzer-ecs-evening-${Environment}
       Description: "夜間の分析実行 (JST 9:00 PM)"
-      ScheduleExpression: "cron(0 12 * * ? *)"  # UTC 12:00 = JST 9:00 PM
+      ScheduleExpression: "cron(0 12 ? * MON-FRI *)"  # UTC 12:00 = JST 9:00 PM (平日のみ)
       State: ENABLED
       Targets:
         - Id: "EveningTarget"
