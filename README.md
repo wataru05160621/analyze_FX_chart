@@ -1,40 +1,51 @@
 # 🤖 FXチャート自動分析システム
 
-**Trading ViewのUSD/JPYチャートを自動取得→AI分析→Notion保存**を日本時間で定時実行するシステムです。
+**USD/JPYチャートを自動生成→AI分析→Notion保存→ブログ投稿**を日本時間で定時実行するシステムです。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![AWS](https://img.shields.io/badge/AWS-Lambda%20%2B%20S3-orange.svg)](https://aws.amazon.com/)
+[![AWS](https://img.shields.io/badge/AWS-ECS%20%2B%20S3-orange.svg)](https://aws.amazon.com/)
 
 ## ✨ 主な特徴
 
-- 🕐 **定時自動実行**: 日本時間 8:00, 15:00, 21:00
-- 📊 **多時間軸分析**: 5分足・1時間足のチャート取得
-- 🤖 **AI分析**: OpenAI GPT-4による高度なテクニカル分析
+- 🕐 **定時自動実行**: 日本時間 8:00, 15:00, 21:00（平日のみ）
+- 📊 **多時間軸分析**: 5分足・1時間足のチャート生成（yfinance + matplotlib）
+- 🤖 **AI分析**: Claude 3.5 Sonnetによる高度なビルドアップ・ブレイクアウト分析
 - 📝 **自動記録**: Notionデータベースに結果保存
-- ☁️ **クラウド対応**: AWS Lambda + S3で完全自動化
+- 📰 **ブログ自動投稿**: WordPress + X（Twitter）連携（8:00のみ）
+- ☁️ **クラウド対応**: AWS ECS Fargate + S3で完全自動化
 - 🛡️ **エラー処理**: 包括的なエラーハンドリングと監視
 
 ## 🎯 システム概要
 
 ```mermaid
-floucharrt TD
-    A[Trading View] -->|スクリーンショット| B[Playwright]
-    B --> C[OpenAI GPT-4]
-    C -->|AI分析| D[AWS S3]
-    D -->|画像保存| E[Notion]
-    E -->|結果保存| F[完了]
+flowchart TD
+    A[yfinance API] -->|価格データ| B[Chart Generator]
+    B -->|チャート生成| C[matplotlib/mplfinance]
+    C --> D[Claude 3.5 Sonnet]
+    D -->|AI分析| E[2種類の分析生成]
+    E --> F[通常分析<br/>トレード用]
+    E --> G[ブログ分析<br/>教育用]
+    F --> H[Notion保存]
+    G --> I[WordPress投稿]
+    I --> J[X Twitter投稿]
     
-    G[AWS EventBridge] -->|定時実行| H[AWS Lambda]
-    H --> A
+    K[AWS EventBridge] -->|定時実行| L[ECS Fargate]
+    L --> A
+    
+    M[AWS S3] -->|画像保存| H
+    M -->|画像保存| I
 ```
 
 ### 🔄 処理フロー
-1. **チャート取得**: Trading ViewからUSD/JPY（5分足・1時間足）を自動取得
-2. **AI分析**: プライスアクション原則に基づくテクニカル分析
+1. **チャート生成**: yfinanceでUSD/JPY価格データ取得→matplotlib/mplfinanceでチャート生成
+2. **AI分析（2種類）**: 
+   - **通常分析**: ビルドアップ・ブレイクアウト詳細分析（トレード用）
+   - **ブログ分析**: 投資助言を含まない教育的解説（一般公開用）
 3. **画像保存**: AWS S3に高解像度チャート画像をアップロード
-4. **結果記録**: Notionデータベースに分析結果と画像リンクを保存
-5. **通知**: エラー時のCloudWatchアラート（オプション）
+4. **結果記録**: Notionデータベースに通常分析結果を保存
+5. **ブログ投稿**: 8:00の分析のみWordPressとXに教育的内容を投稿
+6. **通知**: エラー時のSNSアラート
 
 ## ⚙️ システム要件
 
@@ -45,14 +56,17 @@ floucharrt TD
 - **ストレージ**: 1GB以上
 
 ### 必要なアカウント
-- [OpenAI Platform](https://platform.openai.com/) - GPT-4 API用
+- [Anthropic Claude](https://console.anthropic.com/) - Claude 3.5 Sonnet API
 - [Notion](https://www.notion.so/) - データ保存用
-- [AWS](https://aws.amazon.com/) - Lambda・S3用（本番運用時）
+- [AWS](https://aws.amazon.com/) - ECS Fargate・S3用（本番運用時）
+- [WordPress](https://wordpress.com/) - ブログ投稿用（オプション）
+- [X Developer](https://developer.twitter.com/) - Twitter投稿用（オプション）
 
 ### 推奨環境
-- **AWS Lambda**: 2048MB メモリ、15分タイムアウト
+- **AWS ECS Fargate**: 1 vCPU、2GB メモリ
 - **AWS S3**: ap-northeast-1 リージョン
 - **Notion**: フルページデータベース
+- **WordPress**: REST API有効化
 
 ## 🚀 クイックスタート
 
@@ -155,23 +169,24 @@ MIT License - 詳細は [LICENSE](LICENSE) を参照
 | 📄 ドキュメント | 📝 説明 |
 |---------------|--------|
 | [🚀 クイックスタート](docs/quick_start.md) | 30分で本番運用開始 |
-| [☁️ AWS設定ガイド](docs/aws_setup.md) | Lambda・S3の詳細設定 |
+| [☁️ AWS設定ガイド](docs/aws_setup.md) | ECS Fargate・S3の詳細設定 |
 | [✅ 本番チェックリスト](docs/production_checklist.md) | 運用前の確認事項 |
 | [🔧 Notion設定](docs/notion_setup.md) | Notion API・データベース設定 |
+| [📰 ブログ投稿設定](doc/blog_setup_guide.md) | WordPress・X自動投稿設定 |
 | [⏰ スケジューラー設定](docs/scheduler_setup.md) | 定時実行の設定方法 |
 | [🧪 本番テスト](docs/production_test.md) | 本番環境でのテスト手順 |
 
 ## 💰 コスト見積もり
 
-**月額 $40-70** （1日3回実行の場合）
+**月額 $30-50** （1日3回実行の場合）
 
 | サービス | 月額コスト |
 |---------|----------|
-| OpenAI API (GPT-4) | $30-50 |
-| AWS Lambda | $5-10 |
+| Claude API | $20-30 |
+| AWS ECS Fargate | $5-10 |
 | AWS S3 | $2-5 |
-| AWS その他 | $3-7 |
-| **合計** | **$40-70** |
+| AWS その他 | $3-5 |
+| **合計** | **$30-50** |
 
 ## 🛠️ トラブルシューティング
 
@@ -192,8 +207,9 @@ aws logs tail /aws/lambda/fx-analyzer-prod --follow
 
 ## 🔮 今後の拡張予定
 
+- [x] 📰 **ブログ自動投稿**: WordPress・X連携（実装済み）
 - [ ] 📱 **モバイル通知**: LINEBot連携
 - [ ] 📊 **多通貨対応**: EUR/USD, GBP/USD追加
-- [ ] 🤖 **自動売買**: 分析結果に基づく取引実行
+- [ ] 🤖 **自動売買**: MetaTrader MCP統合による取引実行
 - [ ] 📈 **パフォーマンス追跡**: 予測精度の測定
 - [ ] 🌐 **Web UI**: 分析結果の可視化ダッシュボード

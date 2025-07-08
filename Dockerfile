@@ -33,4 +33,4 @@ COPY docker-healthcheck.py /app/
 RUN chmod +x /app/docker-healthcheck.py
 
 # ECSタスク用のエントリーポイント
-CMD ["python", "-m", "src.main_with_chart"]
+CMD ["python", "-m", "src.main_multi_currency"]

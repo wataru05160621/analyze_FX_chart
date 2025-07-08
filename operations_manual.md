@@ -37,7 +37,7 @@ aws logs filter-log-events \
 #### Notion書き込み確認
 - **確認項目**: 3回/日の分析結果が正常に記録されているか
 - **アクセス**: [Notionデータベース](https://notion.so/your-database)
-- **確認内容**: 
+- **確認内容**:
   - 最新エントリの日時
   - チャート画像の添付
   - 分析内容の品質
@@ -272,10 +272,10 @@ from datetime import datetime, timedelta
 def cleanup_old_notion_pages():
     notion = Client(auth=os.environ["NOTION_API_KEY"])
     database_id = os.environ["NOTION_DATABASE_ID"]
-    
+
     # 90日以前のページを削除
     cutoff_date = datetime.now() - timedelta(days=90)
-    
+
     pages = notion.databases.query(
         database_id=database_id,
         filter={
@@ -285,7 +285,7 @@ def cleanup_old_notion_pages():
             }
         }
     )
-    
+
     for page in pages["results"]:
         notion.pages.update(
             page_id=page["id"],
@@ -349,7 +349,7 @@ aws iam get-role-policy \
 ```bash
 # 1. スケジュール実行を停止
 aws events disable-rule --name fx-analyzer-morning-prod
-aws events disable-rule --name fx-analyzer-afternoon-prod  
+aws events disable-rule --name fx-analyzer-afternoon-prod
 aws events disable-rule --name fx-analyzer-evening-prod
 
 # 2. 実行中タスクを停止

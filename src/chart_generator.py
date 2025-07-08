@@ -204,20 +204,52 @@ class ChartGenerator:
                 warn_too_much_data=500  # 警告を抑制
             )
             
-            # 価格軸（Y軸）の目盛り設定（時間足により刻み幅を変更）
+            # 価格軸（Y軸）の目盛り設定（通貨ペアに応じて刻み幅を変更）
             ax = axes[0]
             y_min, y_max = ax.get_ylim()
+            price_range = y_max - y_min
             
-            if timeframe == "1hour":
-                # 1時間足は0.5円刻み
-                y_ticks = np.arange(np.floor(y_min * 2) / 2, np.ceil(y_max * 2) / 2 + 0.5, 0.5)
+            # 通貨ペアに応じて適切な刻み幅を設定
+            if 'BTC' in self.symbol.upper():
+                # ビットコインは価格が高いので、価格範囲に応じて刻み幅を調整
+                if price_range > 10000:
+                    tick_interval = 1000  # $1,000刻み
+                elif price_range > 1000:
+                    tick_interval = 100   # $100刻み
+                else:
+                    tick_interval = 50    # $50刻み
+                y_ticks = np.arange(np.floor(y_min / tick_interval) * tick_interval, 
+                                   np.ceil(y_max / tick_interval) * tick_interval + tick_interval, 
+                                   tick_interval)
                 ax.set_yticks(y_ticks)
-                ax.set_yticklabels([f'{y:.1f}' for y in y_ticks])
+                ax.set_yticklabels([f'{int(y):,}' for y in y_ticks])
+                
+            elif 'GC=F' in self.symbol or 'XAU' in self.symbol.upper():
+                # ゴールドは$10-$50刻み
+                if price_range > 100:
+                    tick_interval = 20    # $20刻み
+                elif price_range > 50:
+                    tick_interval = 10    # $10刻み
+                else:
+                    tick_interval = 5     # $5刻み
+                y_ticks = np.arange(np.floor(y_min / tick_interval) * tick_interval, 
+                                   np.ceil(y_max / tick_interval) * tick_interval + tick_interval, 
+                                   tick_interval)
+                ax.set_yticks(y_ticks)
+                ax.set_yticklabels([f'{y:,.0f}' for y in y_ticks])
+                
             else:
-                # その他の時間足は0.1円刻み
-                y_ticks = np.arange(np.floor(y_min * 10) / 10, np.ceil(y_max * 10) / 10 + 0.1, 0.1)
-                ax.set_yticks(y_ticks)
-                ax.set_yticklabels([f'{y:.3f}' for y in y_ticks])
+                # USD/JPYなどの通貨ペアは従来通り
+                if timeframe == "1hour":
+                    # 1時間足は0.5円刻み
+                    y_ticks = np.arange(np.floor(y_min * 2) / 2, np.ceil(y_max * 2) / 2 + 0.5, 0.5)
+                    ax.set_yticks(y_ticks)
+                    ax.set_yticklabels([f'{y:.1f}' for y in y_ticks])
+                else:
+                    # その他の時間足は0.1円刻み
+                    y_ticks = np.arange(np.floor(y_min * 10) / 10, np.ceil(y_max * 10) / 10 + 0.1, 0.1)
+                    ax.set_yticks(y_ticks)
+                    ax.set_yticklabels([f'{y:.3f}' for y in y_ticks])
             
             # 時間軸（X軸）の目盛りを調整
             # X軸の範囲を取得

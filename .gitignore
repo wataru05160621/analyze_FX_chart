@@ -38,6 +38,10 @@ ENV/
 .env
 .env.local
 .env.*.local
+.env.phase1
+.env.phase2
+.env.phase3
+.env.phase4
 
 # Logs
 logs/

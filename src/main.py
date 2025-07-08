@@ -14,7 +14,16 @@ from .config import (
     CHATGPT_EMAIL,
     CHATGPT_PASSWORD,
     CHATGPT_PROJECT_NAME,
-    ANALYSIS_MODE
+    ANALYSIS_MODE,
+    ENABLE_BLOG_POSTING,
+    BLOG_POST_HOUR,
+    WORDPRESS_URL,
+    WORDPRESS_USERNAME,
+    WORDPRESS_PASSWORD,
+    TWITTER_API_KEY,
+    TWITTER_API_SECRET,
+    TWITTER_ACCESS_TOKEN,
+    TWITTER_ACCESS_TOKEN_SECRET
 )
 from .chart_generator import ChartGenerator
 from .chatgpt_web_analyzer import ChatGPTWebAnalyzer
@@ -156,6 +165,50 @@ async def analyze_fx_charts():
             error_recorder.record(e, {"stage": "notion_upload"})
             # Notionエラーは致命的ではないので、エラーを記録して続行
             logger.error(f"Notion保存エラー（続行します）: {str(e)}")
+        
+        # 4. ブログとX（Twitter）に投稿（8:00の分析のみ）
+        current_hour = datetime.now().hour
+        if ENABLE_BLOG_POSTING and current_hour == BLOG_POST_HOUR:
+            try:
+                logger.info(f"{BLOG_POST_HOUR}時の分析をブログに投稿中...")
+                
+                # 設定の検証
+                if not all([WORDPRESS_URL, WORDPRESS_USERNAME, WORDPRESS_PASSWORD]):
+                    logger.warning("WordPress設定が不完全です。ブログ投稿をスキップします。")
+                else:
+                    # ブログ用の分析を別途生成
+                    logger.info("ブログ用の分析を生成中...")
+                    from .blog_analyzer import BlogAnalyzer
+                    blog_analyzer = BlogAnalyzer()
+                    blog_analysis = blog_analyzer.analyze_for_blog(screenshots)
+                    
+                    from .blog_publisher import BlogPublisher
+                    
+                    wordpress_config = {
+                        "url": WORDPRESS_URL,
+                        "username": WORDPRESS_USERNAME,
+                        "password": WORDPRESS_PASSWORD
+                    }
+                    
+                    twitter_config = {
+                        "api_key": TWITTER_API_KEY,
+                        "api_secret": TWITTER_API_SECRET,
+                        "access_token": TWITTER_ACCESS_TOKEN,
+                        "access_token_secret": TWITTER_ACCESS_TOKEN_SECRET
+                    }
+                    
+                    publisher = BlogPublisher(wordpress_config, twitter_config)
+                    # ブログ用の分析を使用して投稿
+                    publish_results = publisher.publish_analysis(blog_analysis, screenshots)
+                    
+                    if publish_results['wordpress_url']:
+                        logger.info(f"WordPress投稿成功: {publish_results['wordpress_url']}")
+                    if publish_results['twitter_url']:
+                        logger.info(f"Twitter投稿成功: {publish_results['twitter_url']}")
+                        
+            except Exception as e:
+                error_recorder.record(e, {"stage": "blog_publishing"})
+                logger.error(f"ブログ投稿エラー（続行します）: {str(e)}")
         
         logger.info("すべての処理が完了しました")
         

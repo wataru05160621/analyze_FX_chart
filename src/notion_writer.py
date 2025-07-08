@@ -19,7 +19,7 @@ class NotionWriter:
         self.client = Client(auth=NOTION_API_KEY)
         self.database_id = NOTION_DATABASE_ID
         
-    def create_analysis_page(self, title: str, analysis: str, chart_images: Dict[str, Path]) -> str:
+    def create_analysis_page(self, title: str, analysis: str, chart_images: Dict[str, Path], currency: str = "USD/JPY") -> str:
         """分析結果をNotionページとして作成"""
         try:
             # ページのプロパティを設定
@@ -46,7 +46,7 @@ class NotionWriter:
                 "Currency": {
                     "multi_select": [
                         {
-                            "name": "USD/JPY"
+                            "name": currency
                         }
                     ]
                 }
