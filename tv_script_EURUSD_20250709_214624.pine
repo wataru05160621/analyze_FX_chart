@@ -1,0 +1,49 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0
+// © Phase1_FX_Analysis
+
+//@version=5
+indicator("FX Alert - EUR/USD", overlay=true)
+
+// 設定値
+entry_price = 1.08
+stop_loss = 1.09
+take_profit = 1.08
+
+// 価格レベルを描画
+plot(entry_price, "Entry", color=color.blue, linewidth=2, style=plot.style_line)
+plot(stop_loss, "Stop Loss", color=color.red, linewidth=2, style=plot.style_line)
+plot(take_profit, "Take Profit", color=color.green, linewidth=2, style=plot.style_line)
+
+// 現在価格との関係をラベル表示
+if barstate.islast
+    label.new(bar_index, entry_price, "Entry: " + str.tostring(entry_price), 
+              style=label.style_label_left, color=color.blue, textcolor=color.white)
+    label.new(bar_index, stop_loss, "SL: " + str.tostring(stop_loss), 
+              style=label.style_label_left, color=color.red, textcolor=color.white)
+    label.new(bar_index, take_profit, "TP: " + str.tostring(take_profit), 
+              style=label.style_label_left, color=color.green, textcolor=color.white)
+
+// アラート条件
+// 売りシグナルのアラート条件
+entry_condition = close <= entry_price and close[1] > entry_price
+sl_condition = close >= stop_loss and close[1] < stop_loss
+tp_condition = close <= take_profit and close[1] > take_profit
+
+// アラート設定
+if entry_condition
+    alert("SELL Entry triggered at " + str.tostring(close), alert.freq_once_per_bar)
+
+if sl_condition
+    alert("Stop Loss hit at " + str.tostring(close), alert.freq_once_per_bar)
+
+if tp_condition
+    alert("Take Profit hit at " + str.tostring(close), alert.freq_once_per_bar)
+
+// 背景色で状態を表示
+entry_zone = close <= 1.0860849999999997 and close >= 1.083915
+sl_zone = close >= 1.086912
+tp_zone = close <= 1.08108
+
+bgcolor(entry_zone ? color.new(color.blue, 90) : na)
+bgcolor(sl_zone ? color.new(color.red, 90) : na)
+bgcolor(tp_zone ? color.new(color.green, 90) : na)

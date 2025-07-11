@@ -228,19 +228,21 @@ class BlogPublisher:
         elif "ビルドアップ" in analysis:
             summary_parts.append("📊ビルドアップ形成中")
         
-        # チャートパターンを探す
-        if "三角保ち合い" in analysis:
-            summary_parts.append("📐三角保ち合いパターン")
-        elif "フラッグ" in analysis:
-            summary_parts.append("🚩フラッグパターン")
+        # Volmanセットアップを探す
+        if "パターンブレイク" in analysis:
+            summary_parts.append("📊Volmanパターンブレイク")
+        elif "ビルドアップ" in analysis:
+            summary_parts.append("📈ビルドアップ形成中")
+        elif "25EMA" in analysis:
+            summary_parts.append("📉25EMAサポート/レジスタンス")
         
         # 基本テンプレート
         base_text = f"【{datetime.now().strftime('%m/%d')} USD/JPY チャート解説】\n"
         base_text += "\n".join(summary_parts[:3])  # 最大3項目まで
-        base_text += "\n\n書籍「プライスアクションの原則」に基づく教育的解説"
+        base_text += "\n\nVolmanスキャルピングメソッドに基づく教育的解説"
         
         # ハッシュタグ（短めに設定）
-        hashtags = "\n\n#USDJPY #ドル円 #FX学習 #プライスアクション"
+        hashtags = "\n\n#USDJPY #ドル円 #FX学習 #Volmanメソッド #スキャルピング"
         
         # 文字数調整（URLとリンクテキスト分の余裕を持たせる：約50文字）
         max_length = 200  # URL + "詳細分析はこちら👇\n" の分を考慮
@@ -291,6 +293,14 @@ class BlogPublisher:
             'wordpress_url': None,
             'twitter_url': None
         }
+        
+        # チャートパスのデバッグ情報
+        logger.info(f"受け取ったチャートパス: {chart_paths}")
+        for timeframe, path in chart_paths.items():
+            if isinstance(path, Path):
+                logger.info(f"  {timeframe}: {path} (存在: {path.exists()})")
+            else:
+                logger.warning(f"  {timeframe}: パスがPath型ではありません: {type(path)}")
         
         # WordPressに投稿
         blog_url = self.publish_to_wordpress(analysis, chart_paths)

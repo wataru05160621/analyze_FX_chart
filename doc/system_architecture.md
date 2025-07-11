@@ -80,7 +80,7 @@ sequenceDiagram
     S3-->>ECS: 画像URL
     
     ECS->>Claude: チャート分析依頼
-    Note over Claude: プライスアクション原則<br/>に基づく分析
+    Note over Claude: Volmanメソッド<br/>に基づく分析
     Claude-->>ECS: 分析結果（2種類）
     
     ECS->>Notion: 通常分析結果保存

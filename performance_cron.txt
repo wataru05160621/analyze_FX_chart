@@ -1,0 +1,9 @@
+# Phase 1 パフォーマンス追跡
+# 毎日21:00に日次レポート生成
+0 21 * * * cd /Users/shinzato/programing/claude_code/analyze_FX_chart && python src/generate_daily_report.py >> logs/performance/daily.log 2>&1
+
+# 毎週月曜日に週次レポート
+0 9 * * 1 cd /Users/shinzato/programing/claude_code/analyze_FX_chart && python src/generate_weekly_report.py >> logs/performance/weekly.log 2>&1
+
+# 毎月1日に月次レポート
+0 9 1 * * cd /Users/shinzato/programing/claude_code/analyze_FX_chart && python src/generate_monthly_report.py >> logs/performance/monthly.log 2>&1

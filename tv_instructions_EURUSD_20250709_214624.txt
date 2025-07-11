@@ -1,0 +1,41 @@
+============================================================
+TradingViewアラート設定手順
+============================================================
+
+1. TradingViewで FX:EURUSD チャートを開く
+   https://jp.tradingview.com/chart/
+
+【アラート 1】EUR/USD 売りエントリー
+2. アラートアイコン（ベルマーク）をクリック
+3. 以下を設定:
+   - 条件: EURUSD <= 1.08
+   - アラート名: EUR/USD 売りエントリー
+   - メッセージ: SELL EURUSD @ {{close}} (Target: 1.08, SL: 1.09)
+   - Webhook URL: https://your-domain.com/webhook/tradingview
+     ※「Webhook URL」にチェックを入れる
+4. 「作成」をクリック
+
+【アラート 2】EUR/USD 損切り
+2. アラートアイコン（ベルマーク）をクリック
+3. 以下を設定:
+   - 条件: EURUSD >= 1.09
+   - アラート名: EUR/USD 損切り
+   - メッセージ: STOP LOSS EURUSD @ {{close}}
+   - Webhook URL: https://your-domain.com/webhook/tradingview
+     ※「Webhook URL」にチェックを入れる
+4. 「作成」をクリック
+
+【アラート 3】EUR/USD 利確
+2. アラートアイコン（ベルマーク）をクリック
+3. 以下を設定:
+   - 条件: EURUSD <= 1.08
+   - アラート名: EUR/USD 利確
+   - メッセージ: TAKE PROFIT EURUSD @ {{close}}
+   - Webhook URL: https://your-domain.com/webhook/tradingview
+     ※「Webhook URL」にチェックを入れる
+4. 「作成」をクリック
+
+============================================================
+設定生成日時: 2025-07-09 21:46:24
+信頼度: 80.0%
+============================================================

@@ -79,9 +79,9 @@ TWITTER_ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 # ブログ投稿設定
 ENABLE_BLOG_POSTING_STR = os.getenv("ENABLE_BLOG_POSTING", "false")
 ENABLE_BLOG_POSTING = ENABLE_BLOG_POSTING_STR.lower() == "true"
-BLOG_POST_HOUR = int(os.getenv("BLOG_POST_HOUR", "8"))  # 投稿する分析の時間（JST）
+BLOG_POST_HOUR = int(os.getenv("BLOG_POST_HOUR", "8").split('#')[0].strip())
 
 # WordPress タクソノミー設定
-WORDPRESS_CATEGORY_USDJPY = int(os.getenv("WORDPRESS_CATEGORY_USDJPY", "0"))
-WORDPRESS_CATEGORY_ANALYSIS = int(os.getenv("WORDPRESS_CATEGORY_ANALYSIS", "0"))
-WORDPRESS_TAG_DAILY_USDJPY = int(os.getenv("WORDPRESS_TAG_DAILY_USDJPY", "0"))
+WORDPRESS_CATEGORY_USDJPY = int(os.getenv("WORDPRESS_CATEGORY_USDJPY", "0").split('#')[0].strip())
+WORDPRESS_CATEGORY_ANALYSIS = int(os.getenv("WORDPRESS_CATEGORY_ANALYSIS", "0").split('#')[0].strip())
+WORDPRESS_TAG_DAILY_USDJPY = int(os.getenv("WORDPRESS_TAG_DAILY_USDJPY", "0").split('#')[0].strip())

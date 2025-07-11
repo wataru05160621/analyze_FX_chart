@@ -34,6 +34,17 @@ from .error_handler import handle_error, ConfigurationError
 
 logger = setup_logger(__name__)
 
+# Phase 1統合
+ENABLE_PHASE1 = os.environ.get('ENABLE_PHASE1', 'false').lower() == 'true'
+if ENABLE_PHASE1:
+    try:
+        from .phase1_alert_system import SignalGenerator, TradingViewAlertSystem
+        from .phase1_performance_automation import Phase1PerformanceAutomation
+        logger.info("Phase 1: FX分析アラートシステムを初期化しました")
+    except ImportError as e:
+        logger.warning(f"Phase 1モジュールのインポートに失敗: {e}")
+        ENABLE_PHASE1 = False
+
 def _validate_configuration():
     """設定の検証"""
     errors = []
@@ -88,9 +99,20 @@ async def analyze_fx_multi_currency():
                     if not all([WORDPRESS_URL, WORDPRESS_USERNAME, WORDPRESS_PASSWORD]):
                         logger.warning("WordPress設定が不完全です。ブログ投稿をスキップします。")
                     else:
-                        # ブログ用の分析を生成
-                        blog_analyzer = BlogAnalyzer()
-                        blog_analysis = blog_analyzer.analyze_for_blog(results['USD/JPY']['screenshots'])
+                        # 既存の分析結果を使用（二重分析を回避）
+                        # blog_analyzer = BlogAnalyzer()  # 削除: 二重分析の原因
+                        # blog_analysis = blog_analyzer.analyze_for_blog(results['USD/JPY']['screenshots'])  # 削除
+                        
+                        # 既存の分析結果をブログ用にフォーマット
+                        original_analysis = results['USD/JPY']['analysis']
+                        
+                        # ブログ用のヘッダーとフッターを追加
+                        blog_analysis = f"""**本記事は投資判断を提供するものではありません。**FXチャートの分析手法を学習する目的で、現在のチャート状況を解説しています。実際の売買は自己責任で行ってください。
+
+{original_analysis}
+
+---
+※このブログ記事は教育目的で作成されています。投資は自己責任でお願いします。"""
                         
                         wordpress_config = {
                             "url": WORDPRESS_URL,
@@ -141,6 +163,31 @@ async def analyze_fx_multi_currency():
             # AI分析
             claude_analyzer = ClaudeAnalyzer()
             analysis_result = claude_analyzer.analyze_charts(screenshots)
+            
+            # Phase 1統合
+            if ENABLE_PHASE1:
+                try:
+                    signal_generator = SignalGenerator()
+                    alert_system = TradingViewAlertSystem()
+                    performance = Phase1PerformanceAutomation()
+                    
+                    # シグナル生成
+                    signal = signal_generator.generate_trading_signal(analysis_result)
+                    
+                    if signal['action'] != 'NONE':
+                        # アラート送信
+                        alert_data = {
+                            'signal': signal,
+                            'summary': analysis_result
+                        }
+                        alert = alert_system.send_trade_alert(alert_data)
+                        
+                        # パフォーマンス記録
+                        signal_id = performance.record_signal(signal, {'summary': analysis_result})
+                        logger.info(f"Phase 1: シグナル記録 - {signal_id}")
+                        
+                except Exception as e:
+                    logger.error(f"Phase 1エラー: {e}", exc_info=True)
             
             # Notionに保存
             notion = NotionWriter()

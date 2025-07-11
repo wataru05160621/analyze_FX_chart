@@ -59,9 +59,10 @@ class SignalGenerator:
         """エントリー価格を抽出"""
         patterns = [
             r"エントリー[:：]\s*(\d+\.?\d*)",
-            r"(\d+\.?\d*)でのブレイクアウト",
-            r"(\d+\.?\d*)での[買売]りシグナル",
+            r"(\d+\.?\d*)で.*ブレイクアウト",
+            r"(\d+\.?\d*)で.*[買売]りシグナル",
             r"(\d+\.?\d*)でエントリー",
+            r"(\d+\.?\d*)を.*エントリー",
             r"entry at (\d+\.?\d*)"
         ]
         
@@ -331,7 +332,7 @@ class PerformanceTracker:
             return None
     
     def calculate_statistics(self, signals: List[Dict]) -> Dict:
-        """統計情報を計算"""
+        """統計情報を計算（期待値重視）"""
         total_signals = len(signals)
         executed_signals = sum(1 for s in signals if s.get('executed', False))
         
@@ -351,11 +352,15 @@ class PerformanceTracker:
                     wins.append(pnl)
                 elif pnl < 0:
                     losing_trades += 1
-                    losses.append(pnl)
+                    losses.append(abs(pnl))
         
         win_rate = winning_trades / executed_signals if executed_signals > 0 else 0
         average_win = sum(wins) / len(wins) if wins else 0
         average_loss = sum(losses) / len(losses) if losses else 0
+        
+        # 期待値の計算
+        expected_value = (win_rate * average_win) - ((1 - win_rate) * average_loss)
+        risk_reward_ratio = average_win / average_loss if average_loss > 0 else 0
         
         return {
             'total_signals': total_signals,
@@ -365,7 +370,9 @@ class PerformanceTracker:
             'win_rate': win_rate,
             'total_pnl': total_pnl,
             'average_win': average_win,
-            'average_loss': average_loss
+            'average_loss': average_loss,
+            'expected_value': expected_value,
+            'risk_reward_ratio': risk_reward_ratio
         }
     
     def _convert_to_decimal(self, obj):

@@ -1,0 +1,80 @@
+{
+  "signals": [
+    {
+      "id": "sig_20250711_003315",
+      "timestamp": "2025-07-11T00:33:15.633219",
+      "currency_pair": "USD/JPY",
+      "signal": {
+        "action": "BUY",
+        "entry_price": 145.5,
+        "stop_loss": 145.2,
+        "take_profit": 146.0,
+        "confidence": 0.85
+      },
+      "analysis": "\u30c6\u30b9\u30c8\u5206\u6790: USD/JPY\u306f\u4e0a\u6607\u30c8\u30ec\u30f3\u30c9",
+      "entry_price": 145.5,
+      "stop_loss": 145.2,
+      "take_profit": 146.0,
+      "action": "BUY",
+      "confidence": 0.85,
+      "status": "pending",
+      "result": null,
+      "actual_entry": null,
+      "actual_exit": null,
+      "pnl": null,
+      "pnl_percentage": null
+    },
+    {
+      "id": "sig_20250711_003915",
+      "timestamp": "2025-07-11T00:39:15.893065",
+      "currency_pair": "USD/JPY",
+      "signal": {
+        "action": "BUY",
+        "entry_price": 145.5,
+        "stop_loss": 145.2,
+        "take_profit": 146.0,
+        "confidence": 0.85
+      },
+      "analysis": "\u52d5\u4f5c\u30c6\u30b9\u30c8: USD/JPY\u306f\u4e0a\u6607\u30c8\u30ec\u30f3\u30c9\u4e2d",
+      "entry_price": 145.5,
+      "stop_loss": 145.2,
+      "take_profit": 146.0,
+      "action": "BUY",
+      "confidence": 0.85,
+      "status": "active",
+      "result": "OPEN",
+      "actual_entry": null,
+      "actual_exit": 145.75,
+      "pnl": 0.25,
+      "pnl_percentage": 0.1718213058419244,
+      "verified_at": "2025-07-11T00:40:50.441767"
+    },
+    {
+      "id": "sig_20250711_004142",
+      "timestamp": "2025-07-11T00:41:42.655760",
+      "currency_pair": "USD/JPY",
+      "signal": {
+        "action": "SELL",
+        "entry_price": 146.0,
+        "stop_loss": 146.3,
+        "take_profit": 145.5,
+        "confidence": 0.75
+      },
+      "analysis": "\u5b9f\u4fa1\u683c\u30c6\u30b9\u30c8: USD/JPY\u306f\u4e0b\u964d\u30c8\u30ec\u30f3\u30c9",
+      "entry_price": 146.0,
+      "stop_loss": 146.3,
+      "take_profit": 145.5,
+      "action": "SELL",
+      "confidence": 0.75,
+      "status": "active",
+      "result": "OPEN",
+      "actual_entry": null,
+      "actual_exit": 145.75,
+      "pnl": 0.25,
+      "pnl_percentage": 0.17123287671232876,
+      "verified_at": "2025-07-11T00:41:49.168123"
+    }
+  ],
+  "statistics": {},
+  "last_updated": null
+}

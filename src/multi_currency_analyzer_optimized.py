@@ -93,8 +93,9 @@ class MultiCurrencyAnalyzerOptimized:
         for pair_name, pair_config in CURRENCY_PAIRS.items():
             # 各分析の間に遅延を入れる（レート制限対策）
             if analysis_results:  # 2つ目以降の分析の場合
-                logger.info("レート制限対策のため30秒待機中...")
-                await asyncio.sleep(30)
+                wait_time = 60  # 60秒待機（40,000トークン/分の制限を確実に回避）
+                logger.info(f"レート制限対策のため{wait_time}秒待機中...")
+                await asyncio.sleep(wait_time)
             
             result = await self.analyze_currency_pair(pair_name, pair_config)
             analysis_results[pair_name] = result

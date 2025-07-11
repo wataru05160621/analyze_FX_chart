@@ -86,14 +86,15 @@ def measure_prediction_quality(prediction, actual_result):
 3. **教師データの自動ラベリング**
 ```python
 def auto_label_training_data():
-    # 成功した予測を自動的にラベル付け
-    successful_predictions = get_high_accuracy_predictions(threshold=0.8)
+    # プラスの期待値を持つ予測を自動的にラベル付け
+    successful_predictions = get_positive_expected_value_predictions()
     
     for pred in successful_predictions:
         training_sample = {
             "input": pred.chart_image,
             "output": improve_analysis_text(pred.original_analysis, pred.actual_outcome),
-            "quality_score": pred.accuracy_score
+            "expected_value": pred.expected_value,
+            "risk_reward_ratio": pred.risk_reward_ratio
         }
         
         add_to_training_dataset(training_sample)

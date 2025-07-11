@@ -1,0 +1,679 @@
+{
+  "service": {
+    "service": "phase1-signal-verification",
+    "serviceObject": {
+      "name": "phase1-signal-verification"
+    },
+    "provider": {
+      "name": "aws",
+      "runtime": "python3.9",
+      "region": "ap-northeast-1",
+      "stage": "prod",
+      "environment": {
+        "PERFORMANCE_TABLE": "phase1-performance",
+        "PERFORMANCE_S3_BUCKET": "fx-analysis-performance-prod-455931011903",
+        "SLACK_WEBHOOK_URL": "https://hooks.slack.com/services/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",
+        "ALPHA_VANTAGE_API_KEY": ""
+      },
+      "iam": {
+        "role": {
+          "statements": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:GetObject",
+                "s3:PutObject"
+              ],
+              "Resource": "arn:aws:s3:::fx-analysis-performance-prod-455931011903/*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "dynamodb:GetItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:Scan",
+                "dynamodb:PutItem"
+              ],
+              "Resource": [
+                "arn:aws:dynamodb:ap-northeast-1:*:table/phase1-performance",
+                "arn:aws:dynamodb:ap-northeast-1:*:table/phase1-statistics"
+              ]
+            }
+          ]
+        }
+      },
+      "versionFunctions": true,
+      "compiledCloudFormationTemplate": {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "The AWS CloudFormation template for this Serverless application",
+        "Resources": {
+          "ServerlessDeploymentBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+              "BucketEncryption": {
+                "ServerSideEncryptionConfiguration": [
+                  {
+                    "ServerSideEncryptionByDefault": {
+                      "SSEAlgorithm": "AES256"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "ServerlessDeploymentBucketPolicy": {
+            "Type": "AWS::S3::BucketPolicy",
+            "Properties": {
+              "Bucket": {
+                "Ref": "ServerlessDeploymentBucket"
+              },
+              "PolicyDocument": {
+                "Statement": [
+                  {
+                    "Action": "s3:*",
+                    "Effect": "Deny",
+                    "Principal": "*",
+                    "Resource": [
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "arn:",
+                            {
+                              "Ref": "AWS::Partition"
+                            },
+                            ":s3:::",
+                            {
+                              "Ref": "ServerlessDeploymentBucket"
+                            },
+                            "/*"
+                          ]
+                        ]
+                      },
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "arn:",
+                            {
+                              "Ref": "AWS::Partition"
+                            },
+                            ":s3:::",
+                            {
+                              "Ref": "ServerlessDeploymentBucket"
+                            }
+                          ]
+                        ]
+                      }
+                    ],
+                    "Condition": {
+                      "Bool": {
+                        "aws:SecureTransport": false
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "VerifySignalLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/phase1-signal-verification-prod-verifySignal"
+            }
+          },
+          "ManualVerifyLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/phase1-signal-verification-prod-manualVerify"
+            }
+          },
+          "IamRoleLambdaExecution": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": [
+                        "lambda.amazonaws.com"
+                      ]
+                    },
+                    "Action": [
+                      "sts:AssumeRole"
+                    ]
+                  }
+                ]
+              },
+              "Policies": [
+                {
+                  "PolicyName": {
+                    "Fn::Join": [
+                      "-",
+                      [
+                        "phase1-signal-verification",
+                        "prod",
+                        "lambda"
+                      ]
+                    ]
+                  },
+                  "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:CreateLogStream",
+                          "logs:CreateLogGroup",
+                          "logs:TagResource"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/phase1-signal-verification-prod*:*"
+                          }
+                        ]
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:PutLogEvents"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/phase1-signal-verification-prod*:*:*"
+                          }
+                        ]
+                      },
+                      {
+                        "$ref": "$[\"service\"][\"provider\"][\"iam\"][\"role\"][\"statements\"][0]"
+                      },
+                      {
+                        "$ref": "$[\"service\"][\"provider\"][\"iam\"][\"role\"][\"statements\"][1]"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Path": "/",
+              "RoleName": {
+                "Fn::Join": [
+                  "-",
+                  [
+                    "phase1-signal-verification",
+                    "prod",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    "lambdaRole"
+                  ]
+                ]
+              }
+            }
+          },
+          "PythonRequirementsLambdaLayer": {
+            "Type": "AWS::Lambda::LayerVersion",
+            "Properties": {
+              "Content": {
+                "S3Bucket": {
+                  "Ref": "ServerlessDeploymentBucket"
+                },
+                "S3Key": "serverless/phase1-signal-verification/prod/1752161436757-2025-07-10T15:30:36.757Z/pythonRequirements.zip"
+              },
+              "LayerName": "phase1-signal-verification-prod-python-requirements",
+              "Description": "Python requirements generated by serverless-python-requirements.",
+              "CompatibleRuntimes": [
+                "python3.9"
+              ]
+            }
+          },
+          "VerifySignalLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": {
+                  "Ref": "ServerlessDeploymentBucket"
+                },
+                "S3Key": "serverless/phase1-signal-verification/prod/1752161436757-2025-07-10T15:30:36.757Z/phase1-signal-verification.zip"
+              },
+              "Handler": "handler.lambda_handler",
+              "Runtime": "python3.9",
+              "FunctionName": "phase1-signal-verification-prod-verifySignal",
+              "MemorySize": 1024,
+              "Timeout": 30,
+              "Environment": {
+                "Variables": {
+                  "PERFORMANCE_TABLE": "phase1-performance",
+                  "PERFORMANCE_S3_BUCKET": "fx-analysis-performance-prod-455931011903",
+                  "SLACK_WEBHOOK_URL": "https://hooks.slack.com/services/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",
+                  "ALPHA_VANTAGE_API_KEY": ""
+                }
+              },
+              "Role": {
+                "Fn::GetAtt": [
+                  "IamRoleLambdaExecution",
+                  "Arn"
+                ]
+              }
+            },
+            "DependsOn": [
+              "VerifySignalLogGroup"
+            ]
+          },
+          "ManualVerifyLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": {
+                  "Ref": "ServerlessDeploymentBucket"
+                },
+                "S3Key": "serverless/phase1-signal-verification/prod/1752161436757-2025-07-10T15:30:36.757Z/phase1-signal-verification.zip"
+              },
+              "Handler": "handler.lambda_handler",
+              "Runtime": "python3.9",
+              "FunctionName": "phase1-signal-verification-prod-manualVerify",
+              "MemorySize": 1024,
+              "Timeout": 30,
+              "Environment": {
+                "Variables": {
+                  "PERFORMANCE_TABLE": "phase1-performance",
+                  "PERFORMANCE_S3_BUCKET": "fx-analysis-performance-prod-455931011903",
+                  "SLACK_WEBHOOK_URL": "https://hooks.slack.com/services/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",
+                  "ALPHA_VANTAGE_API_KEY": ""
+                }
+              },
+              "Role": {
+                "Fn::GetAtt": [
+                  "IamRoleLambdaExecution",
+                  "Arn"
+                ]
+              }
+            },
+            "DependsOn": [
+              "ManualVerifyLogGroup"
+            ]
+          },
+          "VerifySignalLambdaVersionXr3HzlkZirmAOr5fojS48tStHCUx5lLPp61rDSRPuw": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "VerifySignalLambdaFunction"
+              },
+              "CodeSha256": "AWYW9X5/ClK/eRN5FBKZFnwh542xuyli1g26He9ckC4="
+            }
+          },
+          "ManualVerifyLambdaVersion0QlGFpA623qrnfj350F1Gh14nIMPirAt9J1Cqe14": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "ManualVerifyLambdaFunction"
+              },
+              "CodeSha256": "AWYW9X5/ClK/eRN5FBKZFnwh542xuyli1g26He9ckC4="
+            }
+          },
+          "Phase1signalverificationprodverifySignalrule1EventBridgeRule": {
+            "Type": "AWS::Events::Rule",
+            "Properties": {
+              "EventPattern": {
+                "source": [
+                  "phase1.signals"
+                ],
+                "detail-type": [
+                  "Signal Verification Scheduled"
+                ]
+              },
+              "Name": "phase1-signal-verification-prod-verifySignal-rule-1",
+              "State": "ENABLED",
+              "Targets": [
+                {
+                  "Arn": {
+                    "Fn::GetAtt": [
+                      "VerifySignalLambdaFunction",
+                      "Arn"
+                    ]
+                  },
+                  "Id": "phase1-signal-verification-prod-verifySignal-rule-1-target"
+                }
+              ]
+            }
+          },
+          "VerifySignalEventBridgeLambdaPermission1": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+              "Action": "lambda:InvokeFunction",
+              "FunctionName": {
+                "$ref": "$[\"service\"][\"provider\"][\"compiledCloudFormationTemplate\"][\"Resources\"][\"Phase1signalverificationprodverifySignalrule1EventBridgeRule\"][\"Properties\"][\"Targets\"][0][\"Arn\"]"
+              },
+              "Principal": "events.amazonaws.com",
+              "SourceArn": {
+                "Fn::Join": [
+                  ":",
+                  [
+                    "arn",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    "events",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    {
+                      "Fn::Join": [
+                        "/",
+                        [
+                          "rule",
+                          "default",
+                          "phase1-signal-verification-prod-verifySignal-rule-1"
+                        ]
+                      ]
+                    }
+                  ]
+                ]
+              }
+            }
+          },
+          "PerformanceS3Bucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+              "BucketName": "fx-analysis-performance-prod-455931011903",
+              "VersioningConfiguration": {
+                "Status": "Enabled"
+              },
+              "LifecycleConfiguration": {
+                "Rules": [
+                  {
+                    "Id": "DeleteOldVersions",
+                    "Status": "Enabled",
+                    "NoncurrentVersionExpirationInDays": 30
+                  }
+                ]
+              }
+            }
+          },
+          "PerformanceTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+              "TableName": "phase1-performance",
+              "AttributeDefinitions": [
+                {
+                  "AttributeName": "signal_id",
+                  "AttributeType": "S"
+                }
+              ],
+              "KeySchema": [
+                {
+                  "AttributeName": "signal_id",
+                  "KeyType": "HASH"
+                }
+              ],
+              "BillingMode": "PAY_PER_REQUEST"
+            }
+          }
+        },
+        "Outputs": {
+          "ServerlessDeploymentBucketName": {
+            "Value": {
+              "Ref": "ServerlessDeploymentBucket"
+            },
+            "Export": {
+              "Name": "sls-phase1-signal-verification-prod-ServerlessDeploymentBucketName"
+            }
+          },
+          "PythonRequirementsLambdaLayerQualifiedArn": {
+            "Description": "Current Lambda layer version",
+            "Value": {
+              "Ref": "PythonRequirementsLambdaLayer"
+            },
+            "Export": {
+              "Name": "sls-phase1-signal-verification-prod-PythonRequirementsLambdaLayerQualifiedArn"
+            }
+          },
+          "PythonRequirementsLambdaLayerHash": {
+            "Description": "Current Lambda layer hash",
+            "Value": "1c4eefa279ad3ef5cc2bb3a5b663be5598c55766",
+            "Export": {
+              "Name": "sls-phase1-signal-verification-prod-PythonRequirementsLambdaLayerHash"
+            }
+          },
+          "PythonRequirementsLambdaLayerS3Key": {
+            "Description": "Current Lambda layer S3Key",
+            "Value": "serverless/phase1-signal-verification/prod/1752161436757-2025-07-10T15:30:36.757Z/pythonRequirements.zip",
+            "Export": {
+              "Name": "sls-phase1-signal-verification-prod-PythonRequirementsLambdaLayerS3Key"
+            }
+          },
+          "VerifySignalLambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "VerifySignalLambdaVersionXr3HzlkZirmAOr5fojS48tStHCUx5lLPp61rDSRPuw"
+            },
+            "Export": {
+              "Name": "sls-phase1-signal-verification-prod-VerifySignalLambdaFunctionQualifiedArn"
+            }
+          },
+          "ManualVerifyLambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "ManualVerifyLambdaVersion0QlGFpA623qrnfj350F1Gh14nIMPirAt9J1Cqe14"
+            },
+            "Export": {
+              "Name": "sls-phase1-signal-verification-prod-ManualVerifyLambdaFunctionQualifiedArn"
+            }
+          }
+        }
+      },
+      "coreCloudFormationTemplate": {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "The AWS CloudFormation template for this Serverless application",
+        "Resources": {
+          "ServerlessDeploymentBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+              "BucketEncryption": {
+                "ServerSideEncryptionConfiguration": [
+                  {
+                    "ServerSideEncryptionByDefault": {
+                      "SSEAlgorithm": "AES256"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "ServerlessDeploymentBucketPolicy": {
+            "Type": "AWS::S3::BucketPolicy",
+            "Properties": {
+              "Bucket": {
+                "Ref": "ServerlessDeploymentBucket"
+              },
+              "PolicyDocument": {
+                "Statement": [
+                  {
+                    "Action": "s3:*",
+                    "Effect": "Deny",
+                    "Principal": "*",
+                    "Resource": [
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "arn:",
+                            {
+                              "Ref": "AWS::Partition"
+                            },
+                            ":s3:::",
+                            {
+                              "Ref": "ServerlessDeploymentBucket"
+                            },
+                            "/*"
+                          ]
+                        ]
+                      },
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "arn:",
+                            {
+                              "Ref": "AWS::Partition"
+                            },
+                            ":s3:::",
+                            {
+                              "Ref": "ServerlessDeploymentBucket"
+                            }
+                          ]
+                        ]
+                      }
+                    ],
+                    "Condition": {
+                      "Bool": {
+                        "aws:SecureTransport": false
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "Outputs": {
+          "ServerlessDeploymentBucketName": {
+            "Value": {
+              "Ref": "ServerlessDeploymentBucket"
+            }
+          }
+        }
+      },
+      "vpc": {}
+    },
+    "custom": {
+      "pythonRequirements": {
+        "dockerizePip": true,
+        "layer": true
+      }
+    },
+    "plugins": [
+      "serverless-python-requirements"
+    ],
+    "pluginsData": {},
+    "functions": {
+      "verifySignal": {
+        "handler": "handler.lambda_handler",
+        "timeout": 30,
+        "events": [
+          {
+            "eventBridge": {
+              "eventBus": "default",
+              "pattern": {
+                "$ref": "$[\"service\"][\"provider\"][\"compiledCloudFormationTemplate\"][\"Resources\"][\"Phase1signalverificationprodverifySignalrule1EventBridgeRule\"][\"Properties\"][\"EventPattern\"]"
+              }
+            }
+          }
+        ],
+        "name": "phase1-signal-verification-prod-verifySignal",
+        "package": {},
+        "memory": 1024,
+        "runtime": "python3.9",
+        "vpc": {},
+        "versionLogicalId": "VerifySignalLambdaVersionXr3HzlkZirmAOr5fojS48tStHCUx5lLPp61rDSRPuw"
+      },
+      "manualVerify": {
+        "handler": "handler.lambda_handler",
+        "timeout": 30,
+        "events": [],
+        "name": "phase1-signal-verification-prod-manualVerify",
+        "package": {},
+        "memory": 1024,
+        "runtime": "python3.9",
+        "vpc": {},
+        "versionLogicalId": "ManualVerifyLambdaVersion0QlGFpA623qrnfj350F1Gh14nIMPirAt9J1Cqe14"
+      }
+    },
+    "resources": {
+      "Resources": {
+        "PerformanceS3Bucket": {
+          "Type": "AWS::S3::Bucket",
+          "Properties": {
+            "BucketName": "fx-analysis-performance-prod-455931011903",
+            "VersioningConfiguration": {
+              "Status": "Enabled"
+            },
+            "LifecycleConfiguration": {
+              "Rules": [
+                {
+                  "Id": "DeleteOldVersions",
+                  "Status": "Enabled",
+                  "NoncurrentVersionExpirationInDays": 30
+                }
+              ]
+            }
+          }
+        },
+        "PerformanceTable": {
+          "Type": "AWS::DynamoDB::Table",
+          "Properties": {
+            "TableName": "phase1-performance",
+            "AttributeDefinitions": [
+              {
+                "AttributeName": "signal_id",
+                "AttributeType": "S"
+              }
+            ],
+            "KeySchema": [
+              {
+                "AttributeName": "signal_id",
+                "KeyType": "HASH"
+              }
+            ],
+            "BillingMode": "PAY_PER_REQUEST"
+          }
+        }
+      },
+      "Outputs": {}
+    },
+    "configValidationMode": "warn",
+    "serviceFilename": "serverless.yml",
+    "initialServerlessConfig": {
+      "service": "phase1-signal-verification",
+      "frameworkVersion": "3",
+      "provider": {
+        "$ref": "$[\"service\"][\"provider\"]"
+      },
+      "functions": {
+        "$ref": "$[\"service\"][\"functions\"]"
+      },
+      "plugins": {
+        "$ref": "$[\"service\"][\"plugins\"]"
+      },
+      "custom": {
+        "$ref": "$[\"service\"][\"custom\"]"
+      },
+      "resources": {
+        "$ref": "$[\"service\"][\"resources\"]"
+      }
+    },
+    "layers": {
+      "pythonRequirements": {
+        "artifact": ".serverless/pythonRequirements.zip",
+        "name": "phase1-signal-verification-prod-python-requirements",
+        "description": "Python requirements generated by serverless-python-requirements.",
+        "compatibleRuntimes": {
+          "$ref": "$[\"service\"][\"provider\"][\"compiledCloudFormationTemplate\"][\"Resources\"][\"PythonRequirementsLambdaLayer\"][\"Properties\"][\"CompatibleRuntimes\"]"
+        },
+        "package": {}
+      }
+    },
+    "isDashboardMonitoringPreconfigured": false,
+    "artifact": "/Users/shinzato/programing/claude_code/analyze_FX_chart/lambda/phase1-verification/.serverless/phase1-signal-verification.zip"
+  },
+  "package": {
+    "artifactDirectoryName": "serverless/phase1-signal-verification/prod/1752161436757-2025-07-10T15:30:36.757Z",
+    "artifact": "phase1-signal-verification.zip"
+  }
+}

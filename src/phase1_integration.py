@@ -10,7 +10,7 @@ import sys
 
 # 既存のモジュールをインポート
 sys.path.append(str(Path(__file__).parent.parent))
-from src.config import Config
+import src.config as config
 from src.chart_generator import ChartGenerator
 from src.claude_analyzer import ClaudeAnalyzer
 from src.phase1_alert_system import (
@@ -27,9 +27,8 @@ class Phase1FXAnalysisWithAlerts:
     """既存の分析システムにアラート機能を追加"""
     
     def __init__(self):
-        self.config = Config()
-        self.chart_generator = ChartGenerator(self.config)
-        self.analyzer = ClaudeAnalyzer(self.config)
+        self.chart_generator = ChartGenerator()
+        self.analyzer = ClaudeAnalyzer()
         
         # Phase 1の新機能
         self.signal_generator = SignalGenerator()
@@ -51,8 +50,9 @@ class Phase1FXAnalysisWithAlerts:
         try:
             # 1. チャート生成（既存機能）
             logger.info(f"{currency_pair}のチャート生成を開始")
-            screenshots = self.chart_generator.generate_all_charts(
-                self.chart_generator.mt5_wrapper
+            screenshots = self.chart_generator.generate_multiple_charts(
+                timeframes=["1hour", "4hour", "daily"],
+                output_dir=Path("screenshots")
             )
             
             if not screenshots:

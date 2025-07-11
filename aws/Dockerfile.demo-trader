@@ -1,0 +1,36 @@
+FROM python:3.11-slim
+
+# 作業ディレクトリ
+WORKDIR /app
+
+# システムパッケージのインストール
+RUN apt-get update && apt-get install -y \
+    chromium \
+    chromium-driver \
+    fonts-ipafont-gothic \
+    fonts-noto-cjk \
+    && rm -rf /var/lib/apt/lists/*
+
+# 環境変数設定
+ENV CHROME_BIN=/usr/bin/chromium
+ENV CHROMEDRIVER_PATH=/usr/bin/chromedriver
+ENV PYTHONUNBUFFERED=1
+
+# Pythonパッケージのインストール
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# アプリケーションコードのコピー
+COPY src/ ./src/
+COPY doc/プライスアクションの原則/ ./doc/プライスアクションの原則/
+COPY aws/ecs-demo-trader.py ./
+
+# 実行権限を付与
+RUN chmod +x ecs-demo-trader.py
+
+# ヘルスチェックスクリプト
+RUN echo '#!/bin/bash\npython -c "import sys; sys.exit(0)"' > /health-check.sh && \
+    chmod +x /health-check.sh
+
+# 起動コマンド
+CMD ["python", "ecs-demo-trader.py"]

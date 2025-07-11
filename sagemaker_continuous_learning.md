@@ -30,8 +30,8 @@ class ContinuousLearningSageMaker:
         # 3. 24時間後に結果を検証
         schedule_validation(prediction_id, hours=24)
         
-        # 4. 高品質データを学習セットに追加
-        if validation_score > 0.8:
+        # 4. プラスの期待値を持つデータを学習セットに追加
+        if expected_value > 0:
             self.add_to_training_data(chart_data, actual_result)
         
         # 5. 週次で再訓練
@@ -48,9 +48,9 @@ class ContinuousLearningSageMaker:
 分析予測 → 24時間後の検証 → スコアリング → 学習データ追加
 ```
 
-#### B. 段階的な品質向上
+#### B. 段階的な期待値向上
 ```
-初期モデル（60%） → 1ヶ月後（75%） → 3ヶ月後（85%） → 6ヶ月後（95%+）
+初期モデル（期待値0.5%） → 1ヶ月後（期待値1.0%） → 3ヶ月後（期待値1.5%） → 6ヶ月後（期待値2.0%+）
 ```
 
 #### C. 学習データの自動生成
@@ -58,8 +58,8 @@ class ContinuousLearningSageMaker:
 def auto_generate_training_data(self):
     """運用データから自動的に学習データを生成"""
     
-    # 成功した予測のみを学習
-    successful_predictions = self.get_high_accuracy_predictions()
+    # プラスの期待値を持つ予測のみを学習
+    successful_predictions = self.get_positive_expected_value_predictions()
     
     # PDFの原則と組み合わせ
     for pred in successful_predictions:
@@ -68,7 +68,8 @@ def auto_generate_training_data(self):
             "features": self.extract_features(pred.chart_data),
             "analysis": pred.analysis_text,
             "actual_outcome": pred.verified_result,
-            "accuracy_score": pred.accuracy,
+            "expected_value": pred.expected_value,
+            "risk_reward_ratio": pred.risk_reward_ratio,
             "pdf_principles_applied": self.match_pdf_principles(pred)
         }
         
@@ -296,7 +297,7 @@ class FXAnalysisContinuousLearning:
 
 1. **初期投資**: 約80,000円
 2. **継続費用**: 月額2,900円（差分学習）
-3. **品質向上**: 6ヶ月で95%以上の精度
+3. **期待値向上**: 6ヶ月で期待値2.0%以上
 
 ### メリット
 - ✅ 自動的に賢くなる

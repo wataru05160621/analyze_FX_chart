@@ -1,0 +1,392 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Phase1 Demo Trader Infrastructure - 24/7 Automated Trading Data Collection'
+
+Parameters:
+  ImageUri:
+    Type: String
+    Description: Docker image URI for the demo trader
+  VpcId:
+    Type: String
+    Description: VPC ID
+  SubnetIds:
+    Type: CommaDelimitedList
+    Description: Subnet IDs (comma-delimited)
+  AlphaVantageApiKey:
+    Type: String
+    NoEcho: true
+    Description: Alpha Vantage API key
+  ClaudeApiKey:
+    Type: String
+    NoEcho: true
+    Description: Claude API key
+  SlackWebhookUrl:
+    Type: String
+    NoEcho: true
+    Description: Slack webhook URL for notifications
+
+Resources:
+  # S3 Bucket for charts and analysis
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'fx-analysis-phase1-${AWS::AccountId}'
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldCharts
+            Status: Enabled
+            ExpirationInDays: 90
+            Prefix: charts/
+          - Id: DeleteOldAnalysis
+            Status: Enabled
+            ExpirationInDays: 90
+            Prefix: analysis/
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # DynamoDB Table for trade records
+  TradesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: phase1-trades
+      AttributeDefinitions:
+        - AttributeName: trade_id
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+        - AttributeName: status
+          AttributeType: S
+      KeySchema:
+        - AttributeName: trade_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: status-index
+          KeySchema:
+            - AttributeName: status
+              KeyType: HASH
+            - AttributeName: timestamp
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+  # SNS Topic for notifications
+  NotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: phase1-demo-trades
+      DisplayName: Phase1 Demo Trading Notifications
+
+  # Email subscription (optional)
+  EmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: email
+      TopicArn: !Ref NotificationTopic
+      Endpoint: !Ref NotificationEmail
+    Condition: HasNotificationEmail
+
+  # ECS Cluster
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: phase1-demo-trader-cluster
+      CapacityProviders:
+        - FARGATE
+        - FARGATE_SPOT
+      DefaultCapacityProviderStrategy:
+        - CapacityProvider: FARGATE_SPOT
+          Weight: 8
+        - CapacityProvider: FARGATE
+          Weight: 2
+
+  # Task Execution Role
+  TaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: GetSecrets
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: '*'
+
+  # Task Role
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: DemoTraderAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub '${S3Bucket.Arn}'
+                  - !Sub '${S3Bucket.Arn}/*'
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt TradesTable.Arn
+                  - !Sub '${TradesTable.Arn}/index/*'
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: !Ref NotificationTopic
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+
+  # CloudWatch Log Group
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/phase1-demo-trader
+      RetentionInDays: 30
+
+  # Task Definition
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: phase1-demo-trader
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: '512'
+      Memory: '1024'
+      ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt TaskRole.Arn
+      ContainerDefinitions:
+        - Name: demo-trader
+          Image: !Ref ImageUri
+          Essential: true
+          Environment:
+            - Name: S3_BUCKET
+              Value: !Ref S3Bucket
+            - Name: DYNAMODB_TABLE
+              Value: !Ref TradesTable
+            - Name: SNS_TOPIC_ARN
+              Value: !Ref NotificationTopic
+            - Name: ALPHA_VANTAGE_API_KEY
+              Value: !Ref AlphaVantageApiKey
+            - Name: CLAUDE_API_KEY
+              Value: !Ref ClaudeApiKey
+            - Name: SLACK_WEBHOOK_URL
+              Value: !Ref SlackWebhookUrl
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+          HealthCheck:
+            Command:
+              - CMD-SHELL
+              - python -c "import sys; sys.exit(0)"
+            Interval: 300
+            Timeout: 10
+            Retries: 3
+            StartPeriod: 60
+
+  # ECS Service
+  ECSService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: phase1-demo-trader-service
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref TaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          Subnets: !Ref SubnetIds
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+            - !Ref SecurityGroup
+      DeploymentConfiguration:
+        MaximumPercent: 100
+        MinimumHealthyPercent: 0
+
+  # Security Group
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for demo trader
+      VpcId: !Ref VpcId
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  # CloudWatch Alarms
+  ServiceHealthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: phase1-demo-trader-health
+      AlarmDescription: Demo trader service health check
+      MetricName: HealthCheck
+      Namespace: AWS/ECS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 0.5
+      ComparisonOperator: LessThanThreshold
+      AlarmActions:
+        - !Ref NotificationTopic
+      Dimensions:
+        - Name: ServiceName
+          Value: !GetAtt ECSService.Name
+        - Name: ClusterName
+          Value: !Ref ECSCluster
+
+  # Auto-restart Lambda
+  AutoRestartFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: phase1-demo-trader-auto-restart
+      Runtime: python3.9
+      Handler: index.handler
+      Role: !GetAtt AutoRestartRole.Arn
+      Code:
+        ZipFile: |
+          import boto3
+          import os
+          
+          ecs = boto3.client('ecs')
+          
+          def handler(event, context):
+              cluster = os.environ['CLUSTER_NAME']
+              service = os.environ['SERVICE_NAME']
+              
+              # Get current task count
+              response = ecs.describe_services(
+                  cluster=cluster,
+                  services=[service]
+              )
+              
+              if response['services'][0]['runningCount'] == 0:
+                  # Restart service
+                  ecs.update_service(
+                      cluster=cluster,
+                      service=service,
+                      desiredCount=1
+                  )
+                  return {'statusCode': 200, 'body': 'Service restarted'}
+              
+              return {'statusCode': 200, 'body': 'Service is running'}
+      Environment:
+        Variables:
+          CLUSTER_NAME: !Ref ECSCluster
+          SERVICE_NAME: !GetAtt ECSService.Name
+      Timeout: 60
+
+  # Auto-restart Lambda Role
+  AutoRestartRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ECSAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecs:DescribeServices
+                  - ecs:UpdateService
+                Resource: '*'
+
+  # EventBridge Rule for health check
+  HealthCheckRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: phase1-demo-trader-health-check
+      Description: Check demo trader health every 10 minutes
+      ScheduleExpression: rate(10 minutes)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt AutoRestartFunction.Arn
+          Id: '1'
+
+  # Lambda permission for EventBridge
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AutoRestartFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt HealthCheckRule.Arn
+
+Conditions:
+  HasNotificationEmail: !Not [!Equals [!Ref NotificationEmail, '']]
+
+Parameters:
+  NotificationEmail:
+    Type: String
+    Default: ''
+    Description: Email address for notifications (optional)
+
+Outputs:
+  S3BucketName:
+    Description: S3 bucket for charts and analysis
+    Value: !Ref S3Bucket
+  DynamoDBTableName:
+    Description: DynamoDB table for trades
+    Value: !Ref TradesTable
+  ECSClusterName:
+    Description: ECS cluster name
+    Value: !Ref ECSCluster
+  ServiceName:
+    Description: ECS service name
+    Value: !GetAtt ECSService.Name
+  NotificationTopicArn:
+    Description: SNS topic for notifications
+    Value: !Ref NotificationTopic

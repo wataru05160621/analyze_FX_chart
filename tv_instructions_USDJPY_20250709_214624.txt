@@ -1,0 +1,41 @@
+============================================================
+TradingViewアラート設定手順
+============================================================
+
+1. TradingViewで FX:USDJPY チャートを開く
+   https://jp.tradingview.com/chart/
+
+【アラート 1】USD/JPY 買いエントリー
+2. アラートアイコン（ベルマーク）をクリック
+3. 以下を設定:
+   - 条件: USDJPY >= 145.50
+   - アラート名: USD/JPY 買いエントリー
+   - メッセージ: BUY USDJPY @ {{close}} (Target: 146.00, SL: 145.20)
+   - Webhook URL: https://your-domain.com/webhook/tradingview
+     ※「Webhook URL」にチェックを入れる
+4. 「作成」をクリック
+
+【アラート 2】USD/JPY 損切り
+2. アラートアイコン（ベルマーク）をクリック
+3. 以下を設定:
+   - 条件: USDJPY <= 145.20
+   - アラート名: USD/JPY 損切り
+   - メッセージ: STOP LOSS USDJPY @ {{close}}
+   - Webhook URL: https://your-domain.com/webhook/tradingview
+     ※「Webhook URL」にチェックを入れる
+4. 「作成」をクリック
+
+【アラート 3】USD/JPY 利確
+2. アラートアイコン（ベルマーク）をクリック
+3. 以下を設定:
+   - 条件: USDJPY >= 146.00
+   - アラート名: USD/JPY 利確
+   - メッセージ: TAKE PROFIT USDJPY @ {{close}}
+   - Webhook URL: https://your-domain.com/webhook/tradingview
+     ※「Webhook URL」にチェックを入れる
+4. 「作成」をクリック
+
+============================================================
+設定生成日時: 2025-07-09 21:46:24
+信頼度: 80.0%
+============================================================

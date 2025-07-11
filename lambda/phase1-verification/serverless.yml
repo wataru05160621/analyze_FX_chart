@@ -1,0 +1,88 @@
+service: phase1-signal-verification
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: python3.9
+  region: ap-northeast-1
+  stage: prod
+  environment:
+    PERFORMANCE_TABLE: phase1-performance
+    PERFORMANCE_S3_BUCKET: fx-analysis-performance-prod-455931011903
+    SLACK_WEBHOOK_URL: ${env:SLACK_WEBHOOK_URL}
+    ALPHA_VANTAGE_API_KEY: ${env:ALPHA_VANTAGE_API_KEY, ''}
+
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - s3:GetObject
+            - s3:PutObject
+          Resource:
+            - arn:aws:s3:::fx-analysis-performance-prod-455931011903/*
+        - Effect: Allow
+          Action:
+            - dynamodb:GetItem
+            - dynamodb:UpdateItem
+            - dynamodb:Scan
+            - dynamodb:PutItem
+          Resource:
+            - arn:aws:dynamodb:${self:provider.region}:*:table/phase1-performance
+            - arn:aws:dynamodb:${self:provider.region}:*:table/phase1-statistics
+
+functions:
+  verifySignal:
+    handler: handler.lambda_handler
+    timeout: 30
+    events:
+      # EventBridgeによるスケジュール実行
+      - eventBridge:
+          eventBus: default
+          pattern:
+            source:
+              - phase1.signals
+            detail-type:
+              - Signal Verification Scheduled
+    
+  # 手動実行用（CLIから直接呼び出し）
+  manualVerify:
+    handler: handler.lambda_handler
+    timeout: 30
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    dockerizePip: true
+    layer: true
+
+resources:
+  Resources:
+    # S3バケット
+    PerformanceS3Bucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: fx-analysis-performance-prod-455931011903
+        VersioningConfiguration:
+          Status: Enabled
+        LifecycleConfiguration:
+          Rules:
+            - Id: DeleteOldVersions
+              Status: Enabled
+              NoncurrentVersionExpirationInDays: 30
+    
+    # DynamoDBテーブル（オプション）
+    PerformanceTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: phase1-performance
+        AttributeDefinitions:
+          - AttributeName: signal_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: signal_id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST

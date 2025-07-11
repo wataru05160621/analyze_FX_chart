@@ -1,0 +1,9 @@
+{
+  "name": "phase1-signal-verification",
+  "version": "1.0.0",
+  "description": "Phase 1 Signal Verification Lambda",
+  "devDependencies": {
+    "serverless": "^3.34.0",
+    "serverless-python-requirements": "^6.0.0"
+  }
+}
