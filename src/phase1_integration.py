@@ -161,9 +161,13 @@ async def main():
 
 
 if __name__ == "__main__":
-    # 環境変数ファイルを読み込み
-    from dotenv import load_dotenv
-    load_dotenv('.env.phase1')
+    # 環境変数ファイルを読み込み（Lambda環境以外）
+    if not os.environ.get('AWS_LAMBDA_FUNCTION_NAME'):
+        try:
+            from dotenv import load_dotenv
+            load_dotenv('.env.phase1')
+        except ImportError:
+            pass
     
     # メイン処理を実行
     asyncio.run(main())

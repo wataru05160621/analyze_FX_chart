@@ -3,11 +3,20 @@ Claude 3.5 Sonnet を使用したFXチャート分析モジュール
 """
 import base64
 import logging
+import os
 from pathlib import Path
 from typing import Dict, List, Optional
 from anthropic import Anthropic
 from .config import CLAUDE_API_KEY
-from .pdf_extractor import PDFExtractor
+
+# Lambda環境以外でのみPDFExtractorをインポート
+if not os.environ.get('AWS_LAMBDA_FUNCTION_NAME'):
+    try:
+        from .pdf_extractor import PDFExtractor
+    except ImportError:
+        PDFExtractor = None
+else:
+    PDFExtractor = None
 
 logger = logging.getLogger(__name__)
 
@@ -54,16 +63,24 @@ class ClaudeAnalyzer:
                 self.book_content = "\n".join(content_parts)
                 logger.info(f"プライスアクション原則コンテンツ読み込み完了: {len(self.book_content)}文字")
             else:
-                # 既存のPDF読み込み処理にフォールバック
-                pdf_path = Path(__file__).parent.parent / "doc" / "プライスアクションの原則.pdf"
-                if pdf_path.exists():
-                    logger.info("プライスアクションの原則.pdfを読み込み中...")
-                    pdf_extractor = PDFExtractor(pdf_path)
-                    self.book_content = pdf_extractor.extract_text()
-                    logger.info(f"PDFコンテンツ読み込み完了: {len(self.book_content)}文字")
+                # Lambda環境ではPDF読み込みをスキップ
+                if os.environ.get('AWS_LAMBDA_FUNCTION_NAME'):
+                    logger.info("Lambda環境のため、PDFコンテンツをスキップします")
+                    self.book_content = "# Volmanメソッドベースの分析\n\nVolmanメソッドに基づいた価格アクション分析を実行します。"
                 else:
-                    logger.warning(f"PDFファイルが見つかりません: {pdf_path}")
-                    self.book_content = ""
+                    # 既存のPDF読み込み処理にフォールバック
+                    pdf_path = Path(__file__).parent.parent / "doc" / "プライスアクションの原則.pdf"
+                    if pdf_path.exists() and PDFExtractor:
+                        logger.info("プライスアクションの原則.pdfを読み込み中...")
+                        pdf_extractor = PDFExtractor(pdf_path)
+                        self.book_content = pdf_extractor.extract_text()
+                        logger.info(f"PDFコンテンツ読み込み完了: {len(self.book_content)}文字")
+                    else:
+                        if not PDFExtractor:
+                            logger.warning("PDFExtractorが利用できません")
+                        else:
+                            logger.warning(f"PDFファイルが見つかりません: {pdf_path}")
+                        self.book_content = ""
         except Exception as e:
             logger.error(f"コンテンツ読み込みエラー: {e}")
             self.book_content = ""
@@ -422,19 +439,45 @@ class ClaudeAnalyzer:
                     }
                 })
             
-            # Claude APIを呼び出し
+            # Claude APIを呼び出し（リトライ付き）
             logger.info("Claude APIに分析を依頼中...")
-            response = self.client.messages.create(
-                model="claude-3-5-sonnet-20241022",
-                max_tokens=4000,
-                temperature=0.1,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": content
-                    }
-                ]
-            )
+            
+            import time
+            from anthropic import RateLimitError, APIStatusError
+            
+            max_retries = 5
+            retry_delay = 60  # 60秒待機
+            
+            for attempt in range(max_retries):
+                try:
+                    response = self.client.messages.create(
+                        model="claude-3-5-sonnet-20241022",
+                        max_tokens=4000,
+                        temperature=0.1,
+                        messages=[
+                            {
+                                "role": "user",
+                                "content": content
+                            }
+                        ]
+                    )
+                    break  # 成功したらループを抜ける
+                    
+                except (RateLimitError, APIStatusError) as e:
+                    if hasattr(e, 'status_code') and e.status_code == 529:  # Overloaded
+                        if attempt < max_retries - 1:
+                            wait_time = retry_delay * (attempt + 1)  # 段階的に待機時間を増やす
+                            logger.warning(f"APIオーバーロード。{wait_time}秒待機してリトライ... (試行 {attempt + 1}/{max_retries})")
+                            time.sleep(wait_time)
+                            continue
+                    logger.error(f"API呼び出しエラー: {e}")
+                    raise
+                except Exception as e:
+                    logger.error(f"予期しないエラー: {e}")
+                    raise
+            else:
+                # すべてのリトライが失敗した場合
+                raise Exception(f"Claude APIが{max_retries}回の試行後もオーバーロード状態です")
             
             # 応答を取得
             analysis_result = response.content[0].text

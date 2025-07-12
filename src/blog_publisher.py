@@ -87,10 +87,15 @@ class BlogPublisher:
     
     def format_analysis_for_blog(self, analysis: str, chart_paths: Dict[str, Path]) -> Tuple[str, str]:
         """分析結果をブログ記事用にフォーマット"""
+        from src.verification_tracker import get_tracker
+        
+        # 検証日数を取得
+        tracker = get_tracker()
+        verification_day = tracker.get_verification_text()
         
         # タイトル生成（日付を含む）
         today = datetime.now().strftime("%Y年%m月%d日")
-        title = f"【USD/JPY】{today} 朝の相場分析"
+        title = f"【USD/JPY】{today} 朝の相場分析 - {verification_day}"
         
         # 本文フォーマット
         content = f"""
@@ -108,6 +113,7 @@ class BlogPublisher:
 
 <p><small>※本分析は参考情報であり、投資判断は自己責任でお願いいたします。</small></p>
 <p><small>分析システム: Claude 3.5 Sonnet + Python自動分析</small></p>
+<p><small><strong>{verification_day}</strong></small></p>
 """
         
         return title, content
@@ -203,6 +209,11 @@ class BlogPublisher:
     
     def extract_summary_for_twitter(self, analysis: str) -> str:
         """分析結果からTwitter用の要約を抽出（教育的内容）"""
+        from src.verification_tracker import get_tracker
+        
+        # 検証日数を取得
+        tracker = get_tracker()
+        verification_day = tracker.get_verification_text()
         
         # 重要な情報を抽出
         summary_parts = []
@@ -241,8 +252,8 @@ class BlogPublisher:
         base_text += "\n".join(summary_parts[:3])  # 最大3項目まで
         base_text += "\n\nVolmanスキャルピングメソッドに基づく教育的解説"
         
-        # ハッシュタグ（短めに設定）
-        hashtags = "\n\n#USDJPY #ドル円 #FX学習 #Volmanメソッド #スキャルピング"
+        # ハッシュタグ（短めに設定）+ 検証日数
+        hashtags = f"\n\n#USDJPY #ドル円 #FX学習 #{verification_day}"
         
         # 文字数調整（URLとリンクテキスト分の余裕を持たせる：約50文字）
         max_length = 200  # URL + "詳細分析はこちら👇\n" の分を考慮

@@ -166,8 +166,17 @@ MIT License - 詳細は [LICENSE](LICENSE) を参照
 
 ## 📖 ドキュメント
 
+### 📚 ドキュメント管理について
+
+本プロジェクトのドキュメントは `docs/` ディレクトリで一元管理されています。
+- **命名規則**: `XX_document_name.md` 形式（XXは2桁の連番）
+- **索引ファイル**: [`docs/00_DOCUMENT_INDEX.md`](docs/00_DOCUMENT_INDEX.md) で全ドキュメントの一覧と概要を確認できます
+
+### 🔍 主要ドキュメント
+
 | 📄 ドキュメント | 📝 説明 |
 |---------------|--------|
+| [📚 ドキュメント一覧](docs/00_DOCUMENT_INDEX.md) | 全ドキュメントの索引・カテゴリ別整理 |
 | [🚀 クイックスタート](docs/quick_start.md) | 30分で本番運用開始 |
 | [☁️ AWS設定ガイド](docs/aws_setup.md) | ECS Fargate・S3の詳細設定 |
 | [✅ 本番チェックリスト](docs/production_checklist.md) | 運用前の確認事項 |

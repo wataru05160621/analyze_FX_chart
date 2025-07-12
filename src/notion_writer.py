@@ -90,7 +90,11 @@ class NotionWriter:
             }
         })
         
-        # 分析日時
+        # 分析日時と検証日数
+        from src.verification_tracker import get_tracker
+        tracker = get_tracker()
+        verification_day = tracker.get_verification_text()
+        
         blocks.append({
             "object": "block",
             "type": "paragraph",
@@ -99,7 +103,7 @@ class NotionWriter:
                     {
                         "type": "text",
                         "text": {
-                            "content": f"分析日時: {datetime.now().strftime('%Y年%m月%d日 %H:%M')}"
+                            "content": f"分析日時: {datetime.now().strftime('%Y年%m月%d日 %H:%M')} - {verification_day}"
                         }
                     }
                 ]

@@ -1,0 +1,228 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "LambdaManagement",
+            "Effect": "Allow",
+            "Action": [
+                "lambda:CreateFunction",
+                "lambda:UpdateFunctionCode",
+                "lambda:UpdateFunctionConfiguration",
+                "lambda:GetFunction",
+                "lambda:GetFunctionConfiguration",
+                "lambda:InvokeFunction",
+                "lambda:AddPermission",
+                "lambda:RemovePermission",
+                "lambda:ListFunctions",
+                "lambda:TagResource",
+                "lambda:UntagResource",
+                "lambda:PublishVersion",
+                "lambda:CreateAlias",
+                "lambda:UpdateAlias"
+            ],
+            "Resource": [
+                "arn:aws:lambda:ap-northeast-1:455931011903:function:fx-analyzer-prod",
+                "arn:aws:lambda:ap-northeast-1:455931011903:function:fx-analysis-function"
+            ]
+        },
+        {
+            "Sid": "EventBridgeManagement",
+            "Effect": "Allow",
+            "Action": [
+                "events:PutRule",
+                "events:DeleteRule",
+                "events:PutTargets",
+                "events:RemoveTargets",
+                "events:DescribeRule",
+                "events:EnableRule",
+                "events:DisableRule",
+                "events:ListRules",
+                "events:ListTargetsByRule"
+            ],
+            "Resource": [
+                "arn:aws:events:ap-northeast-1:455931011903:rule/fx-analysis-*"
+            ]
+        },
+        {
+            "Sid": "CloudFormationManagement",
+            "Effect": "Allow",
+            "Action": [
+                "cloudformation:CreateStack",
+                "cloudformation:UpdateStack",
+                "cloudformation:DeleteStack",
+                "cloudformation:DescribeStacks",
+                "cloudformation:DescribeStackEvents",
+                "cloudformation:DescribeStackResources",
+                "cloudformation:GetTemplate",
+                "cloudformation:ListStacks",
+                "cloudformation:ValidateTemplate"
+            ],
+            "Resource": [
+                "arn:aws:cloudformation:ap-northeast-1:455931011903:stack/fx-analysis-stack/*",
+                "arn:aws:cloudformation:ap-northeast-1:455931011903:stack/phase1-demo-trader/*"
+            ]
+        },
+        {
+            "Sid": "S3Management",
+            "Effect": "Allow",
+            "Action": [
+                "s3:CreateBucket",
+                "s3:PutObject",
+                "s3:GetObject",
+                "s3:DeleteObject",
+                "s3:ListBucket",
+                "s3:GetBucketLocation",
+                "s3:PutBucketPolicy",
+                "s3:GetBucketPolicy",
+                "s3:PutLifecycleConfiguration"
+            ],
+            "Resource": [
+                "arn:aws:s3:::fx-analysis-*",
+                "arn:aws:s3:::fx-analysis-*/*",
+                "arn:aws:s3:::fx-analyzer-deploy-455931011903-ap-northeast-1",
+                "arn:aws:s3:::fx-analyzer-deploy-455931011903-ap-northeast-1/*"
+            ]
+        },
+        {
+            "Sid": "ECRManagement",
+            "Effect": "Allow",
+            "Action": [
+                "ecr:CreateRepository",
+                "ecr:DescribeRepositories",
+                "ecr:GetAuthorizationToken",
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:BatchGetImage",
+                "ecr:PutImage",
+                "ecr:InitiateLayerUpload",
+                "ecr:UploadLayerPart",
+                "ecr:CompleteLayerUpload"
+            ],
+            "Resource": [
+                "arn:aws:ecr:ap-northeast-1:455931011903:repository/fx-analysis",
+                "arn:aws:ecr:ap-northeast-1:455931011903:repository/phase1-demo-trader"
+            ]
+        },
+        {
+            "Sid": "ECRAuth",
+            "Effect": "Allow",
+            "Action": [
+                "ecr:GetAuthorizationToken"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "SecretsManager",
+            "Effect": "Allow",
+            "Action": [
+                "secretsmanager:CreateSecret",
+                "secretsmanager:UpdateSecret",
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+                "secretsmanager:PutSecretValue"
+            ],
+            "Resource": [
+                "arn:aws:secretsmanager:ap-northeast-1:455931011903:secret:fx-analysis/*"
+            ]
+        },
+        {
+            "Sid": "IAMRoleManagement",
+            "Effect": "Allow",
+            "Action": [
+                "iam:CreateRole",
+                "iam:AttachRolePolicy",
+                "iam:PutRolePolicy",
+                "iam:GetRole",
+                "iam:GetRolePolicy",
+                "iam:PassRole",
+                "iam:CreateServiceLinkedRole"
+            ],
+            "Resource": [
+                "arn:aws:iam::455931011903:role/fx-analysis-*",
+                "arn:aws:iam::455931011903:role/phase1-*"
+            ]
+        },
+        {
+            "Sid": "LogsManagement",
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents",
+                "logs:DescribeLogGroups",
+                "logs:DescribeLogStreams",
+                "logs:GetLogEvents",
+                "logs:FilterLogEvents"
+            ],
+            "Resource": [
+                "arn:aws:logs:ap-northeast-1:455931011903:log-group:/aws/lambda/fx-*",
+                "arn:aws:logs:ap-northeast-1:455931011903:log-group:/ecs/fx-*",
+                "arn:aws:logs:ap-northeast-1:455931011903:log-group:/ecs/phase1-*"
+            ]
+        },
+        {
+            "Sid": "DynamoDBManagement",
+            "Effect": "Allow",
+            "Action": [
+                "dynamodb:CreateTable",
+                "dynamodb:DescribeTable",
+                "dynamodb:UpdateTable",
+                "dynamodb:PutItem",
+                "dynamodb:GetItem",
+                "dynamodb:Query",
+                "dynamodb:Scan"
+            ],
+            "Resource": [
+                "arn:aws:dynamodb:ap-northeast-1:455931011903:table/phase1-*"
+            ]
+        },
+        {
+            "Sid": "ECSManagement",
+            "Effect": "Allow",
+            "Action": [
+                "ecs:CreateCluster",
+                "ecs:CreateService",
+                "ecs:UpdateService",
+                "ecs:DescribeServices",
+                "ecs:DescribeClusters",
+                "ecs:RegisterTaskDefinition",
+                "ecs:DeregisterTaskDefinition",
+                "ecs:DescribeTaskDefinition",
+                "ecs:RunTask",
+                "ecs:StopTask",
+                "ecs:ListTasks",
+                "ecs:DescribeTasks"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "SNSManagement",
+            "Effect": "Allow",
+            "Action": [
+                "sns:CreateTopic",
+                "sns:Subscribe",
+                "sns:Publish",
+                "sns:GetTopicAttributes",
+                "sns:SetTopicAttributes"
+            ],
+            "Resource": [
+                "arn:aws:sns:ap-northeast-1:455931011903:fx-analysis-*",
+                "arn:aws:sns:ap-northeast-1:455931011903:phase1-*"
+            ]
+        },
+        {
+            "Sid": "GeneralRead",
+            "Effect": "Allow",
+            "Action": [
+                "sts:GetCallerIdentity",
+                "ec2:DescribeVpcs",
+                "ec2:DescribeSubnets",
+                "ec2:DescribeSecurityGroups",
+                "ec2:CreateSecurityGroup",
+                "ec2:AuthorizeSecurityGroupIngress",
+                "ec2:AuthorizeSecurityGroupEgress"
+            ],
+            "Resource": "*"
+        }
+    ]
+}

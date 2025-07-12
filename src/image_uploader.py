@@ -100,7 +100,8 @@ class S3Uploader(ImageUploader):
             
             # ECS環境ではIAMロールで認証
             self.s3_client = boto3.client('s3')
-            self.bucket_name = os.getenv("AWS_S3_BUCKET") or os.getenv("S3_BUCKET_NAME")
+            # Lambda環境ではS3_BUCKET_NAMEを優先
+            self.bucket_name = os.getenv("S3_BUCKET_NAME") or os.getenv("AWS_S3_BUCKET")
             self.region = os.getenv("AWS_REGION", "ap-northeast-1")
         except ImportError:
             logger.warning("boto3パッケージがインストールされていません")
@@ -147,7 +148,8 @@ class S3Uploader(ImageUploader):
 def get_uploader() -> ImageUploader:
     """設定に基づいて適切なアップローダーを返す"""
     
-    s3_bucket = os.getenv("AWS_S3_BUCKET") or os.getenv("S3_BUCKET_NAME")
+    # Lambda環境ではS3_BUCKET_NAMEを優先
+    s3_bucket = os.getenv("S3_BUCKET_NAME") or os.getenv("AWS_S3_BUCKET")
     cloudinary_name = os.getenv("CLOUDINARY_CLOUD_NAME")
     imgur_id = os.getenv("IMGUR_CLIENT_ID")
     

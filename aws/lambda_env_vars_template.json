@@ -1,0 +1,21 @@
+{
+  "CLAUDE_API_KEY": "your_claude_api_key",
+  "NOTION_API_KEY": "your_notion_api_key",
+  "NOTION_DATABASE_ID": "your_notion_database_id",
+  "WORDPRESS_URL": "https://your-wordpress-site.com",
+  "WORDPRESS_USERNAME": "your_username",
+  "WORDPRESS_PASSWORD": "your_password",
+  "WORDPRESS_CATEGORY_USDJPY": "4",
+  "WORDPRESS_CATEGORY_ANALYSIS": "3",
+  "WORDPRESS_TAG_DAILY_USDJPY": "2",
+  "TWITTER_API_KEY": "your_twitter_api_key",
+  "TWITTER_API_SECRET": "your_twitter_api_secret",
+  "TWITTER_ACCESS_TOKEN": "your_twitter_access_token",
+  "TWITTER_ACCESS_TOKEN_SECRET": "your_twitter_access_token_secret",
+  "SLACK_WEBHOOK_URL": "https://hooks.slack.com/services/YOUR/WEBHOOK/URL",
+  "ALPHA_VANTAGE_API_KEY": "your_alpha_vantage_api_key",
+  "OPENAI_API_KEY": "your_openai_api_key",
+  "AWS_REGION": "ap-northeast-1",
+  "ENABLE_BLOG_POSTING": "true",
+  "BLOG_POST_HOUR": "8"
+}

@@ -141,7 +141,10 @@ class ChartGenerator:
             # チャート生成
             if output_dir is None:
                 output_dir = Path("screenshots")
-            output_dir.mkdir(exist_ok=True)
+            else:
+                # 文字列の場合はPathオブジェクトに変換
+                output_dir = Path(output_dir)
+            output_dir.mkdir(exist_ok=True, parents=True)
             
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             output_path = output_dir / f"chart_{timeframe}_{timestamp}.png"

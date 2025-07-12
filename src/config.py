@@ -3,13 +3,21 @@
 """
 import os
 from pathlib import Path
-from dotenv import load_dotenv
 
-# .envファイルを読み込み
-load_dotenv()
+# Lambda環境ではdotenvを使わない
+if not os.environ.get('AWS_LAMBDA_FUNCTION_NAME'):
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
 
 # プロジェクトのルートディレクトリ
-PROJECT_ROOT = Path(__file__).parent.parent
+if os.environ.get('AWS_LAMBDA_FUNCTION_NAME'):
+    # Lambda環境では/tmpを使用
+    PROJECT_ROOT = Path("/tmp")
+else:
+    PROJECT_ROOT = Path(__file__).parent.parent
 
 # API設定
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -30,7 +38,9 @@ TIMEFRAMES = {
 
 # スクリーンショット設定
 SCREENSHOT_DIR = PROJECT_ROOT / "screenshots"
-SCREENSHOT_DIR.mkdir(exist_ok=True)
+# Lambda環境以外でのみディレクトリを作成
+if not os.environ.get('AWS_LAMBDA_FUNCTION_NAME'):
+    SCREENSHOT_DIR.mkdir(exist_ok=True)
 
 # PDF分析設定
 PRICE_ACTION_PDF = PROJECT_ROOT / "doc" / "プライスアクションの原則.pdf"
@@ -62,7 +72,9 @@ SCHEDULE_TIMES = [
 
 # ログ設定
 LOG_DIR = PROJECT_ROOT / "logs"
-LOG_DIR.mkdir(exist_ok=True)
+# Lambda環境以外でのみディレクトリを作成
+if not os.environ.get('AWS_LAMBDA_FUNCTION_NAME'):
+    LOG_DIR.mkdir(exist_ok=True)
 LOG_FILE = LOG_DIR / "fx_analysis.log"
 
 # WordPress設定

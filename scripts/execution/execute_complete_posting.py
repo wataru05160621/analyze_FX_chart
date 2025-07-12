@@ -122,10 +122,15 @@ except Exception as e:
         import requests
         webhook = os.environ.get('SLACK_WEBHOOK_URL', 'https://hooks.slack.com/services/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')
         
+        # 検証日数を取得
+        from src.verification_tracker import get_tracker
+        tracker = get_tracker()
+        verification_day = tracker.get_verification_text()
+        
         # 分析の要約
         summary = analysis[:500] if len(analysis) > 500 else analysis
         message = {
-            "text": f"*FX分析完了 (Volmanメソッド)*\n"
+            "text": f"*FX分析完了 (Volmanメソッド) - {verification_day}*\n"
                    f"時刻: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
                    f"通貨ペア: USD/JPY\n\n"
                    f"{summary}..."
