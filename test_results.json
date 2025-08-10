@@ -1,11 +1,11 @@
 {
   "status": "completed_with_errors",
   "errors": [
-    "Notion: Status is expected to be status. Currency is expected to be multi_select."
+    "Notion: Invalid status option. Status option \"Not started\" does not exist\"."
   ],
   "analysis": {
-    "run_id": "6ff6e744-491f-4ee6-8c47-6f491a17ce74",
-    "timestamp_jst": "2025-08-10T21:52:39.445986+09:00",
+    "run_id": "121516b2-7484-422a-93c8-77b7127fc6d2",
+    "timestamp_jst": "2025-08-10T21:53:21.373526+09:00",
     "pair": "USDJPY",
     "timeframes": {
       "5m": {
@@ -77,29 +77,29 @@
     },
     "charts": {
       "5m": {
-        "key": "charts/USDJPY/2025-08-10/6ff6e744-491f-4ee6-8c47-6f491a17ce74_5m.png",
-        "url": "https://analyze-fx-455931011903-apne1.s3.amazonaws.com/charts/USDJPY/2025-08-10/6ff6e744-491f-4ee6-8c47-6f491a17ce74_5m.png?AWSAccessKeyId=AKIAWUJ43EM77N72LHF3&Signature=TKN3RcyZkAOS5ENNR4u%2BjrPOYYo%3D&Expires=1754833961"
+        "key": "charts/USDJPY/2025-08-10/121516b2-7484-422a-93c8-77b7127fc6d2_5m.png",
+        "url": "https://analyze-fx-455931011903-apne1.s3.amazonaws.com/charts/USDJPY/2025-08-10/121516b2-7484-422a-93c8-77b7127fc6d2_5m.png?AWSAccessKeyId=AKIAWUJ43EM77N72LHF3&Signature=nvr%2F2hY78%2FX52uRZTNwrKEBnqnk%3D&Expires=1754834001"
       },
       "1h": {
-        "key": "charts/USDJPY/2025-08-10/6ff6e744-491f-4ee6-8c47-6f491a17ce74_1h.png",
-        "url": "https://analyze-fx-455931011903-apne1.s3.amazonaws.com/charts/USDJPY/2025-08-10/6ff6e744-491f-4ee6-8c47-6f491a17ce74_1h.png?AWSAccessKeyId=AKIAWUJ43EM77N72LHF3&Signature=GXJ4zdEm60BH2dul%2Bhs92X1mjiM%3D&Expires=1754833961"
+        "key": "charts/USDJPY/2025-08-10/121516b2-7484-422a-93c8-77b7127fc6d2_1h.png",
+        "url": "https://analyze-fx-455931011903-apne1.s3.amazonaws.com/charts/USDJPY/2025-08-10/121516b2-7484-422a-93c8-77b7127fc6d2_1h.png?AWSAccessKeyId=AKIAWUJ43EM77N72LHF3&Signature=hamArR3eFDaJsdv5xOCtv%2BCx6YY%3D&Expires=1754834001"
       }
     }
   },
   "s3": {
     "charts": {
       "5m": {
-        "key": "charts/USDJPY/2025-08-10/6ff6e744-491f-4ee6-8c47-6f491a17ce74_5m.png",
-        "url": "https://analyze-fx-455931011903-apne1.s3.amazonaws.com/charts/USDJPY/2025-08-10/6ff6e744-491f-4ee6-8c47-6f491a17ce74_5m.png?AWSAccessKeyId=AKIAWUJ43EM77N72LHF3&Signature=TKN3RcyZkAOS5ENNR4u%2BjrPOYYo%3D&Expires=1754833961"
+        "key": "charts/USDJPY/2025-08-10/121516b2-7484-422a-93c8-77b7127fc6d2_5m.png",
+        "url": "https://analyze-fx-455931011903-apne1.s3.amazonaws.com/charts/USDJPY/2025-08-10/121516b2-7484-422a-93c8-77b7127fc6d2_5m.png?AWSAccessKeyId=AKIAWUJ43EM77N72LHF3&Signature=nvr%2F2hY78%2FX52uRZTNwrKEBnqnk%3D&Expires=1754834001"
       },
       "1h": {
-        "key": "charts/USDJPY/2025-08-10/6ff6e744-491f-4ee6-8c47-6f491a17ce74_1h.png",
-        "url": "https://analyze-fx-455931011903-apne1.s3.amazonaws.com/charts/USDJPY/2025-08-10/6ff6e744-491f-4ee6-8c47-6f491a17ce74_1h.png?AWSAccessKeyId=AKIAWUJ43EM77N72LHF3&Signature=GXJ4zdEm60BH2dul%2Bhs92X1mjiM%3D&Expires=1754833961"
+        "key": "charts/USDJPY/2025-08-10/121516b2-7484-422a-93c8-77b7127fc6d2_1h.png",
+        "url": "https://analyze-fx-455931011903-apne1.s3.amazonaws.com/charts/USDJPY/2025-08-10/121516b2-7484-422a-93c8-77b7127fc6d2_1h.png?AWSAccessKeyId=AKIAWUJ43EM77N72LHF3&Signature=hamArR3eFDaJsdv5xOCtv%2BCx6YY%3D&Expires=1754834001"
       }
     },
     "json": {
-      "key": "charts/USDJPY/2025-08-10/6ff6e744-491f-4ee6-8c47-6f491a17ce74_analysis.json",
-      "url": "https://analyze-fx-455931011903-apne1.s3.amazonaws.com/charts/USDJPY/2025-08-10/6ff6e744-491f-4ee6-8c47-6f491a17ce74_analysis.json?AWSAccessKeyId=AKIAWUJ43EM77N72LHF3&Signature=4CXvw8jxeVJHAo3VOt5NCQMLcm8%3D&Expires=1754833961"
+      "key": "charts/USDJPY/2025-08-10/121516b2-7484-422a-93c8-77b7127fc6d2_analysis.json",
+      "url": "https://analyze-fx-455931011903-apne1.s3.amazonaws.com/charts/USDJPY/2025-08-10/121516b2-7484-422a-93c8-77b7127fc6d2_analysis.json?AWSAccessKeyId=AKIAWUJ43EM77N72LHF3&Signature=MvUr4vgR%2BI4iOdPoIgB26eayRPg%3D&Expires=1754834001"
     }
   },
   "slack_sent": true
