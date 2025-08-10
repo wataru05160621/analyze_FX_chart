@@ -1,0 +1,38 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "S3Access",
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:PutObjectAcl",
+        "s3:GetObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": "arn:aws:s3:::analyze-fx-455931011903-apne1/*"
+    },
+    {
+      "Sid": "S3ListBucket",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket"
+      ],
+      "Resource": "arn:aws:s3:::analyze-fx-455931011903-apne1"
+    },
+    {
+      "Sid": "SecretsManagerAccess",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:GetSecretValue"
+      ],
+      "Resource": [
+        "arn:aws:secretsmanager:ap-northeast-1:455931011903:secret:NOTION_API_KEY-*",
+        "arn:aws:secretsmanager:ap-northeast-1:455931011903:secret:NOTION_DB_ID-*",
+        "arn:aws:secretsmanager:ap-northeast-1:455931011903:secret:SLACK_WEBHOOK_URL-*",
+        "arn:aws:secretsmanager:ap-northeast-1:455931011903:secret:S3_BUCKET-*",
+        "arn:aws:secretsmanager:ap-northeast-1:455931011903:secret:TWELVEDATA_API_KEY-*"
+      ]
+    }
+  ]
+}

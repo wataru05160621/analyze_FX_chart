@@ -77,8 +77,20 @@ run-local:
 	@if [ ! -d "venv" ]; then make install; fi
 	@./venv/bin/python -m src.runner.main
 
-# AWS deployment helpers
-.PHONY: ecr-login ecr-push deploy
+# AWS setup and deployment helpers
+.PHONY: setup setup-dry-run ecr-login ecr-push deploy
+
+# Setup AWS environment
+setup:
+	@echo "Setting up AWS environment..."
+	@if [ ! -d "venv" ]; then make install; fi
+	@./venv/bin/python scripts/setup_aws.py
+
+# Dry run setup (no resources created)
+setup-dry-run:
+	@echo "Running setup in dry-run mode..."
+	@if [ ! -d "venv" ]; then make install; fi
+	@./venv/bin/python scripts/setup_aws.py --dry-run
 
 # Login to ECR
 ecr-login:

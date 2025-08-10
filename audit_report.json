@@ -1,0 +1,139 @@
+{
+  "timestamp": "2025-08-10T21:26:24.123420",
+  "region": "ap-northeast-1",
+  "account_id": "455931011903",
+  "checks": {
+    "identity": {
+      "status": "OK",
+      "account": "455931011903",
+      "arn": "arn:aws:iam::455931011903:user/developer-user",
+      "user_id": "AIDAWUJ43EM74AZ7HJCQ2"
+    },
+    "secrets": {
+      "NOTION_API_KEY": {
+        "status": "OK",
+        "arn": "arn:aws:secretsmanager:ap-northeast-1:455931011903:secret:NOTION_API_KEY-h1FruJ",
+        "last_changed": "2025-08-10T17:43:00.785000+09:00",
+        "rotation_enabled": false,
+        "description": ""
+      },
+      "NOTION_DB_ID": {
+        "status": "OK",
+        "arn": "arn:aws:secretsmanager:ap-northeast-1:455931011903:secret:NOTION_DB_ID-6UGXyH",
+        "last_changed": "2025-08-10T16:12:58.122000+09:00",
+        "rotation_enabled": false,
+        "description": ""
+      },
+      "SLACK_WEBHOOK_URL": {
+        "status": "OK",
+        "arn": "arn:aws:secretsmanager:ap-northeast-1:455931011903:secret:SLACK_WEBHOOK_URL-GE1WHn",
+        "last_changed": "2025-08-10T17:52:40.545000+09:00",
+        "rotation_enabled": false,
+        "description": ""
+      },
+      "S3_BUCKET": {
+        "status": "OK",
+        "arn": "arn:aws:secretsmanager:ap-northeast-1:455931011903:secret:S3_BUCKET-cfML41",
+        "last_changed": "2025-08-10T16:11:55.220000+09:00",
+        "rotation_enabled": false,
+        "description": ""
+      },
+      "TWELVEDATA_API_KEY": {
+        "status": "MISSING",
+        "message": "Secret 'TWELVEDATA_API_KEY' not found"
+      }
+    },
+    "s3": {
+      "bucket": "analyze-fx-455931011903-apne1",
+      "exists": true,
+      "encryption": {
+        "status": "OK",
+        "type": "AES256"
+      },
+      "public_access_block": {
+        "status": "OK",
+        "all_blocked": true
+      },
+      "lifecycle": {
+        "status": "OK",
+        "charts_rule": true,
+        "rule_status": "Enabled"
+      },
+      "status": "OK"
+    },
+    "ecs": {
+      "cluster": {
+        "status": "OK",
+        "name": "analyze-fx-cluster",
+        "status_value": "INACTIVE",
+        "running_tasks": 0,
+        "pending_tasks": 0
+      },
+      "task_definition": {
+        "status": "ERROR",
+        "message": "An error occurred (ClientException) when calling the DescribeTaskDefinition operation: Unable to describe task definition."
+      }
+    },
+    "schedulers": {
+      "fx-analyzer-0800-jst-dev": {
+        "status": "MISSING",
+        "message": "Scheduler 'fx-analyzer-0800-jst-dev' not found"
+      },
+      "fx-analyzer-0800-jst": {
+        "status": "MISSING",
+        "message": "Scheduler 'fx-analyzer-0800-jst' not found"
+      }
+    },
+    "ecr": {
+      "repository": "analyze-fx",
+      "status": "ERROR",
+      "message": "Repository 'analyze-fx' not found"
+    },
+    "iam": {
+      "task_role": {
+        "status": "WARNING",
+        "message": "Role 'analyze-fx-task-role' not found"
+      },
+      "scheduler_role": {
+        "status": "OK",
+        "arn": "arn:aws:iam::455931011903:role/service-role/Amazon_EventBridge_Scheduler_ECS_a2bab3de69",
+        "has_scheduler_trust": true
+      }
+    },
+    "vpc": {
+      "subnets": {
+        "status": "OK",
+        "count": 2,
+        "details": [
+          {
+            "id": "subnet-02aef8bf85b9ceb0d",
+            "availability_zone": "ap-northeast-1a",
+            "cidr": "172.31.64.0/20",
+            "available_ips": 4091
+          },
+          {
+            "id": "subnet-06fba36a849bb6647",
+            "availability_zone": "ap-northeast-1d",
+            "cidr": "172.31.48.0/20",
+            "available_ips": 4091
+          }
+        ]
+      },
+      "security_group": {
+        "status": "OK",
+        "id": "sg-03cb601e40f6e32ac",
+        "name": "analyze-fx-egress-only",
+        "vpc_id": "vpc-020adef85dde66887",
+        "ingress_rules": 0,
+        "egress_rules": 1
+      }
+    },
+    "logs": {
+      "log_group": "/ecs/analyze-fx",
+      "status": "OK",
+      "arn": "arn:aws:logs:ap-northeast-1:455931011903:log-group:/ecs/analyze-fx:*",
+      "retention_days": "Never expire",
+      "stored_bytes": 0
+    }
+  }
+}
