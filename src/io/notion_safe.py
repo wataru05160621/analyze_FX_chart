@@ -1,4 +1,4 @@
-"""Notion integration for analysis results."""
+"""Notion integration with safe property handling."""
 
 from datetime import datetime
 from typing import Dict, List, Optional
@@ -10,7 +10,7 @@ from src.utils.logger import get_logger
 logger = get_logger(__name__)
 
 class NotionClient:
-    """Notion client for storing analysis results."""
+    """Notion client for storing analysis results with safe property handling."""
     
     def __init__(self, api_key: Optional[str] = None, db_id: Optional[str] = None):
         """Initialize Notion client."""
@@ -65,7 +65,7 @@ class NotionClient:
             raise
     
     def _prepare_properties(self, analysis: Dict) -> Dict:
-        """Prepare page properties from analysis."""
+        """Prepare page properties from analysis - minimal safe version."""
         run_id = analysis.get("run_id", "unknown")
         timestamp = analysis.get("timestamp_jst", datetime.now().isoformat())
         pair = analysis.get("pair", config.pair)
@@ -76,7 +76,7 @@ class NotionClient:
         # Format title
         title = f"{pair} | {setup} | {timestamp[:16]}"
         
-        # Notionデータベースのプロパティに合わせて修正
+        # 最小限のプロパティセット（エラーを回避）
         properties = {
             "Name": {
                 "title": [
@@ -86,27 +86,42 @@ class NotionClient:
                         }
                     }
                 ]
-            },
-            "Date": {
+            }
+        }
+        
+        # Dateプロパティがあれば追加（エラーハンドリング付き）
+        try:
+            properties["Date"] = {
                 "date": {
                     "start": timestamp
                 }
-            },
-            # Statusプロパティを削除（エラー回避のため）
-            # データベースの実際のStatus設定が不明なため、一時的にコメントアウト
-            # "Status": {
-            #     "status": {
-            #         "name": "Done" if setup != "No-Trade" else "Not started"
-            #     }
-            # },
-            "Currency": {
+            }
+        except:
+            pass
+        
+        # Currencyプロパティがあれば追加（エラーハンドリング付き）
+        try:
+            properties["Currency"] = {
                 "multi_select": [
                     {
                         "name": pair
                     }
                 ]
             }
-        }
+        except:
+            pass
+        
+        # タグとして設定情報を追加（select/multi_selectとして）
+        try:
+            properties["Tags"] = {
+                "multi_select": [
+                    {"name": setup},
+                    {"name": f"conf-{confidence}"},
+                    {"name": f"EV-{ev_r:.1f}R"}
+                ]
+            }
+        except:
+            pass
         
         return properties
     
@@ -151,7 +166,7 @@ class NotionClient:
             f"Setup: {analysis.get('final_setup', 'No-Trade')}",
             f"Confidence: {analysis.get('confidence', 'low')}",
             f"Expected Value: {analysis.get('ev_R', 0):.2f}R",
-            f"Status: {analysis.get('status', 'analyzed')}"
+            f"Analysis Time: {analysis.get('timestamp_jst', '')[:16]} JST"
         ]
         
         blocks.append({

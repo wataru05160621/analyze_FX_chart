@@ -1,0 +1,87 @@
+{
+  "object": "database",
+  "id": "21d50adc-70fe-8083-a5a3-e68e8e4464ac",
+  "cover": null,
+  "icon": null,
+  "created_time": "2025-06-25T19:49:00.000Z",
+  "created_by": {
+    "object": "user",
+    "id": "fa0e8e59-e1f2-4f63-83e3-c937f083d6a4"
+  },
+  "last_edited_by": {
+    "object": "user",
+    "id": "fa0e8e59-e1f2-4f63-83e3-c937f083d6a4"
+  },
+  "last_edited_time": "2025-08-10T14:37:00.000Z",
+  "title": [
+    {
+      "type": "text",
+      "text": {
+        "content": "FX Chart Analyze",
+        "link": null
+      },
+      "annotations": {
+        "bold": false,
+        "italic": false,
+        "strikethrough": false,
+        "underline": false,
+        "code": false,
+        "color": "default"
+      },
+      "plain_text": "FX Chart Analyze",
+      "href": null
+    }
+  ],
+  "description": [],
+  "is_inline": false,
+  "properties": {
+    "Date": {
+      "id": "%3DCWF",
+      "name": "Date",
+      "type": "date",
+      "date": {}
+    },
+    "Currency": {
+      "id": "dryI",
+      "name": "Currency",
+      "type": "multi_select",
+      "multi_select": {
+        "options": [
+          {
+            "id": "RHrQ",
+            "name": "XAU/USD",
+            "color": "gray",
+            "description": null
+          },
+          {
+            "id": "DjQ?",
+            "name": "BTC/USD",
+            "color": "yellow",
+            "description": null
+          },
+          {
+            "id": "yY:Z",
+            "name": "USD/JPY",
+            "color": "purple",
+            "description": null
+          }
+        ]
+      }
+    },
+    "Name": {
+      "id": "title",
+      "name": "Name",
+      "type": "title",
+      "title": {}
+    }
+  },
+  "parent": {
+    "type": "workspace",
+    "workspace": true
+  },
+  "url": "https://www.notion.so/21d50adc70fe8083a5a3e68e8e4464ac",
+  "public_url": null,
+  "archived": false,
+  "in_trash": false,
+  "request_id": "af599189-7801-4e8c-8020-7660c640239d"
+}

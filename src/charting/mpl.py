@@ -57,11 +57,16 @@ class ChartGenerator:
         # Prepare data
         df_plot = df.copy()
         
-        # Ensure we have required columns
-        required_cols = ['open', 'high', 'low', 'close', 'volume']
-        if not all(col in df_plot.columns for col in required_cols):
-            logger.error(f"Missing required columns for chart: {df_plot.columns.tolist()}")
+        # Ensure we have required columns (volume is optional for FX)
+        required_cols = ['open', 'high', 'low', 'close']
+        missing_cols = [col for col in required_cols if col not in df_plot.columns]
+        if missing_cols:
+            logger.error(f"Missing required columns: {missing_cols}. Available columns: {df_plot.columns.tolist()}")
             return self._generate_empty_chart(timeframe)
+        
+        # Add dummy volume if not present (required by mplfinance)
+        if 'volume' not in df_plot.columns:
+            df_plot['volume'] = 1000
         
         # Calculate EMAs
         df_plot['ema25'] = self.calculate_ema(df_plot, 25)
