@@ -1,0 +1,272 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FXAnalysisOutput",
+  "type": "object",
+  "required": [
+    "run_id",
+    "timestamp_jst",
+    "pair",
+    "timeframe",
+    "data_source",
+    "indicators",
+    "setup",
+    "filters",
+    "rationale",
+    "confluence_count",
+    "plan",
+    "risk",
+    "ev_R",
+    "confidence",
+    "charts",
+    "notion",
+    "status"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string"
+    },
+    "timestamp_jst": {
+      "type": "string"
+    },
+    "pair": {
+      "type": "string",
+      "enum": [
+        "USDJPY",
+        "EURJPY",
+        "XAUUSD",
+        "BTCUSD"
+      ]
+    },
+    "timeframe": {
+      "type": "string",
+      "enum": [
+        "5m",
+        "1h"
+      ]
+    },
+    "data_source": {
+      "type": "string",
+      "enum": [
+        "twelvedata"
+      ]
+    },
+    "indicators": {
+      "type": "object",
+      "properties": {
+        "ema25_slope_deg": {
+          "type": "number"
+        },
+        "atr20": {
+          "type": "number"
+        },
+        "spread": {
+          "type": "number"
+        },
+        "round_numbers": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "build_up": {
+          "type": "object",
+          "properties": {
+            "width_pips": {
+              "type": "number"
+            },
+            "bars": {
+              "type": "integer"
+            },
+            "ema_inside": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "setup": {
+      "type": "string",
+      "enum": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "No-Trade"
+      ]
+    },
+    "filters": {
+      "type": "object",
+      "properties": {
+        "atr_ok": {
+          "type": "boolean"
+        },
+        "spread_ok": {
+          "type": "boolean"
+        },
+        "news_window_ok": {
+          "type": "boolean"
+        },
+        "build_up_ok": {
+          "type": "boolean"
+        }
+      }
+    },
+    "rationale": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 3
+    },
+    "confluence_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "no_trade_reasons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "advice_flags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "plan": {
+      "type": "object",
+      "properties": {
+        "entry": {
+          "type": "string"
+        },
+        "tp_pips": {
+          "type": "number"
+        },
+        "sl_pips": {
+          "type": "number"
+        },
+        "timeout_min": {
+          "type": "integer"
+        }
+      }
+    },
+    "risk": {
+      "type": "object",
+      "properties": {
+        "r_multiple": {
+          "type": "number"
+        },
+        "position_size": {
+          "type": "number"
+        }
+      }
+    },
+    "ev_R": {
+      "type": "number"
+    },
+    "confidence": {
+      "type": "string",
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ]
+    },
+    "charts": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": [
+          "timeframe",
+          "s3_key"
+        ],
+        "properties": {
+          "timeframe": {
+            "type": "string",
+            "enum": [
+              "5m",
+              "1h"
+            ]
+          },
+          "s3_key": {
+            "type": "string"
+          },
+          "s3_presigned_url": {
+            "type": "string"
+          },
+          "width_px": {
+            "type": "integer"
+          },
+          "height_px": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "notion": {
+      "type": "object",
+      "properties": {
+        "Name": {
+          "type": "string"
+        },
+        "Date": {
+          "type": "string"
+        },
+        "Currency": {
+          "type": "string"
+        },
+        "Timeframe": {
+          "type": "string"
+        },
+        "Setup": {
+          "type": "string"
+        },
+        "Confidence": {
+          "type": "string"
+        },
+        "EV_R": {
+          "type": "number"
+        },
+        "EntryType": {
+          "type": "string"
+        },
+        "TP_pips": {
+          "type": "number"
+        },
+        "SL_pips": {
+          "type": "number"
+        },
+        "Status": {
+          "type": "string"
+        },
+        "Summary": {
+          "type": "string"
+        },
+        "RunId": {
+          "type": "string"
+        },
+        "Charts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "failed",
+        "no-trade"
+      ]
+    },
+    "debug": {
+      "type": "object"
+    }
+  }
+}

@@ -1,0 +1,4 @@
+【学習用】USD/JPY 5m｜{setup_name}
+根拠: {reasons_3}／EV: {ev_R:.2f}R（助言ではありません）
+詳解→ {wp_url}
+#priceaction #buildUp #forex

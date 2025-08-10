@@ -43,6 +43,7 @@ COPY --chown=appuser:appuser src/ ./src/
 COPY --chown=appuser:appuser memory/ ./memory/
 COPY --chown=appuser:appuser prompts/ ./prompts/
 COPY --chown=appuser:appuser schema/ ./schema/
+COPY --chown=appuser:appuser quality_step_bundle_full/ ./quality_step_bundle_full/
 
 # Set Python path
 ENV PYTHONPATH=/app
@@ -55,5 +56,5 @@ USER appuser
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD python -c "import sys; sys.exit(0)" || exit 1
 
-# Run the application
-CMD ["python", "-m", "src.runner.main"]
+# Run the application (v2 runner with quality improvements)
+CMD ["python", "-m", "src.runner.main_v2"]

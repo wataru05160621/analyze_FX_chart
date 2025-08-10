@@ -1,0 +1,53 @@
+{
+  "success": {
+    "blocks": [
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": "*{pair} {tf}* {setup} EV {ev_R:.2f}R — {summary}"
+        }
+      },
+      {
+        "type": "context",
+        "elements": [
+          {
+            "type": "mrkdwn",
+            "text": "TP {tp} / SL {sl}｜Confluence {conf_cnt}｜<{notion_url}|Notion>"
+          }
+        ]
+      }
+    ]
+  },
+  "failure": {
+    "blocks": [
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": ":warning: *失敗* {phase} — {error_msg}"
+        }
+      },
+      {
+        "type": "context",
+        "elements": [
+          {
+            "type": "mrkdwn",
+            "text": "再試行: {retry_policy}｜RunId {run_id}"
+          }
+        ]
+      }
+    ]
+  },
+  "no_trade": {
+    "blocks": [
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": "*No-Trade* 理由: {reasons} — <{notion_url}|Notion>"
+        }
+      }
+    ]
+  }
+}

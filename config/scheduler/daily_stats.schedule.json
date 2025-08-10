@@ -1,0 +1,32 @@
+{
+  "name": "fx-daily-stats-2345-jst",
+  "description": "Daily statistics job at 23:45 JST",
+  "schedule_expression": "cron(45 14 ? * MON-FRI *)",
+  "schedule_expression_timezone": "UTC",
+  "flexible_time_window": {
+    "mode": "OFF"
+  },
+  "state": "ENABLED",
+  "target": {
+    "arn": "arn:aws:ecs:ap-northeast-1:455931011903:cluster/analyze-fx-cluster",
+    "role_arn": "arn:aws:iam::455931011903:role/service-role/Amazon_EventBridge_Scheduler_ECS_a2bab3de69",
+    "ecs_parameters": {
+      "task_definition_arn": "arn:aws:ecs:ap-northeast-1:455931011903:task-definition/analyze-fx-daily-stats",
+      "launch_type": "FARGATE",
+      "network_configuration": {
+        "awsvpc_configuration": {
+          "assign_public_ip": "ENABLED",
+          "subnets": [
+            "subnet-06fba36a849bb6647",
+            "subnet-02aef8bf85b9ceb0d"
+          ],
+          "security_groups": [
+            "sg-03cb601e40f6e32ac"
+          ]
+        }
+      },
+      "task_count": 1,
+      "platform_version": "LATEST"
+    }
+  }
+}

@@ -1,6 +1,7 @@
 # Core
 python-dotenv==1.0.0
 pydantic==2.5.3
+pyyaml==6.0.1
 
 # Data fetching
 requests==2.31.0
