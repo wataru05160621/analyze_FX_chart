@@ -505,8 +505,8 @@ class FXAnalyzerV2:
         
         return {
             "width_pips": round(width_pips, 1),
-            "bars": bars_in_range,
-            "ema_inside": ema_inside
+            "bars": int(bars_in_range),  # Ensure it's a regular int
+            "ema_inside": bool(ema_inside)  # Ensure it's a regular bool
         }
     
     def _prepare_notion_properties(self, analysis: Dict) -> Dict:

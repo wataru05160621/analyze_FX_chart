@@ -228,9 +228,12 @@ def main():
         runner = FXAnalysisRunnerV2()
         results = runner.run()
         
-        # Save results to file for debugging
-        with open("analysis_result.json", "w", encoding="utf-8") as f:
-            json.dump(results, f, indent=2, ensure_ascii=False)
+        # Save results to file for debugging (only in local environment)
+        try:
+            with open("/tmp/analysis_result.json", "w", encoding="utf-8") as f:
+                json.dump(results, f, indent=2, ensure_ascii=False, default=str)
+        except:
+            pass  # Ignore file write errors in container
         
         # Exit with appropriate code
         if results.get("status") == "failed":
