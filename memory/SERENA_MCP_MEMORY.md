@@ -12,6 +12,10 @@
 ## セットアップ（6型）
 A: Pattern Break／B: PB Pullback／C: Probe Rev.／D: Failed Break Rev.／E: Momentum Cont.／F: Range Scalp
 
+## データソースとチャート
+- 価格データは **TwelveData API** を使用（yfinance禁止）。
+- 分析は **5分足と1時間足** の両方を生成・参照し、Notionにはチャート画像も添付する。
+
 ## 見送り基準
 - ATR20<7p、スプレッド>2p、ニュース±10分、ビルドアップ基準未満（3条件のうち2未満）
 - 連敗3回 or 日次-2R 到達 → 30分クールダウン

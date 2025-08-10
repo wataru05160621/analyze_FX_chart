@@ -25,8 +25,7 @@
         }
       },
       "PropagateTags": "TASK_DEFINITION",
-      "EnableECSManagedTags": true,
-      "EnableExecuteCommand": false
+      "EnableECSManagedTags": true
     }
   }
 }

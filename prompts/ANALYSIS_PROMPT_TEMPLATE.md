@@ -11,3 +11,8 @@ Task:
 1) Decide Setup (A–F or No‑Trade) by rules.
 2) Produce narrative (<=12 lines) + strict JSON matching `/schema/analysis_output.schema.json`.
 3) If filters fail, use setup=No-Trade with reasons.
+
+Requirements:
+- Always use **both 5‑min and 1‑hour** timeframes when reasoning.
+- Data source must be **TwelveData** (no yfinance). Include `data_source:"twelvedata"` in JSON.
+- Emit `charts` array with entries for `5m` and `1h`.

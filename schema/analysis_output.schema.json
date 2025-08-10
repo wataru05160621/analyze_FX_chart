@@ -13,7 +13,9 @@
     "risk",
     "ev_R",
     "confidence",
-    "status"
+    "status",
+    "data_source",
+    "charts"
   ],
   "properties": {
     "run_id": {
@@ -23,10 +25,26 @@
       "type": "string"
     },
     "pair": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "USDJPY",
+        "EURJPY",
+        "XAUUSD",
+        "BTCUSD"
+      ]
     },
     "timeframe": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "5m",
+        "1h"
+      ]
+    },
+    "data_source": {
+      "type": "string",
+      "enum": [
+        "twelvedata"
+      ]
     },
     "indicators": {
       "type": "object",
@@ -62,8 +80,49 @@
         }
       }
     },
+    "charts": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": [
+          "timeframe",
+          "s3_key"
+        ],
+        "properties": {
+          "timeframe": {
+            "type": "string",
+            "enum": [
+              "5m",
+              "1h"
+            ]
+          },
+          "s3_key": {
+            "type": "string"
+          },
+          "s3_presigned_url": {
+            "type": "string"
+          },
+          "width_px": {
+            "type": "integer"
+          },
+          "height_px": {
+            "type": "integer"
+          }
+        }
+      }
+    },
     "setup": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "No-Trade"
+      ]
     },
     "filters": {
       "type": "object"
@@ -84,13 +143,70 @@
       "type": "number"
     },
     "confidence": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ]
     },
     "notion": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "Name": {
+          "type": "string"
+        },
+        "Date": {
+          "type": "string"
+        },
+        "Currency": {
+          "type": "string"
+        },
+        "Timeframe": {
+          "type": "string"
+        },
+        "Setup": {
+          "type": "string"
+        },
+        "Confidence": {
+          "type": "string"
+        },
+        "EV_R": {
+          "type": "number"
+        },
+        "EntryType": {
+          "type": "string"
+        },
+        "TP_pips": {
+          "type": "number"
+        },
+        "SL_pips": {
+          "type": "number"
+        },
+        "Status": {
+          "type": "string"
+        },
+        "Summary": {
+          "type": "string"
+        },
+        "RunId": {
+          "type": "string"
+        },
+        "Charts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
     },
     "status": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "success",
+        "failed",
+        "no-trade"
+      ]
     },
     "debug": {
       "type": "object"
