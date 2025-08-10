@@ -1,0 +1,99 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FXAnalysisOutput",
+  "type": "object",
+  "required": [
+    "run_id",
+    "pair",
+    "timeframe",
+    "setup",
+    "filters",
+    "rationale",
+    "plan",
+    "risk",
+    "ev_R",
+    "confidence",
+    "status"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string"
+    },
+    "timestamp_jst": {
+      "type": "string"
+    },
+    "pair": {
+      "type": "string"
+    },
+    "timeframe": {
+      "type": "string"
+    },
+    "indicators": {
+      "type": "object",
+      "properties": {
+        "ema25_slope_deg": {
+          "type": "number"
+        },
+        "atr20": {
+          "type": "number"
+        },
+        "spread": {
+          "type": "number"
+        },
+        "round_numbers": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "build_up": {
+          "type": "object",
+          "properties": {
+            "width_pips": {
+              "type": "number"
+            },
+            "bars": {
+              "type": "integer"
+            },
+            "ema_inside": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "setup": {
+      "type": "string"
+    },
+    "filters": {
+      "type": "object"
+    },
+    "rationale": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "plan": {
+      "type": "object"
+    },
+    "risk": {
+      "type": "object"
+    },
+    "ev_R": {
+      "type": "number"
+    },
+    "confidence": {
+      "type": "string"
+    },
+    "notion": {
+      "type": "object"
+    },
+    "status": {
+      "type": "string"
+    },
+    "debug": {
+      "type": "object"
+    }
+  }
+}

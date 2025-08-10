@@ -1,0 +1,33 @@
+{
+  "Name": "fx-analyzer-0800-jst-dev",
+  "ScheduleExpression": "cron(0 8 ? * MON-FRI *)",
+  "ScheduleExpressionTimezone": "Asia/Tokyo",
+  "State": "ENABLED",
+  "FlexibleTimeWindow": {
+    "Mode": "OFF"
+  },
+  "Target": {
+    "Arn": "arn:aws:ecs:ap-northeast-1:455931011903:cluster/analyze-fx-cluster",
+    "RoleArn": "arn:aws:iam::455931011903:role/service-role/Amazon_EventBridge_Scheduler_ECS_a2bab3de69",
+    "EcsParameters": {
+      "LaunchType": "FARGATE",
+      "PlatformVersion": "LATEST",
+      "TaskDefinitionArn": "arn:aws:ecs:ap-northeast-1:455931011903:task-definition/analyze-fx:1",
+      "NetworkConfiguration": {
+        "awsvpcConfiguration": {
+          "Subnets": [
+            "subnet-06fba36a849bb6647",
+            "subnet-02aef8bf85b9ceb0d"
+          ],
+          "SecurityGroups": [
+            "sg-03cb601e40f6e32ac"
+          ],
+          "AssignPublicIp": "ENABLED"
+        }
+      },
+      "PropagateTags": "TASK_DEFINITION",
+      "EnableECSManagedTags": true,
+      "EnableExecuteCommand": false
+    }
+  }
+}
