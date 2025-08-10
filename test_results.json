@@ -1,0 +1,106 @@
+{
+  "status": "completed_with_errors",
+  "errors": [
+    "Notion: Status is expected to be status. Currency is expected to be multi_select."
+  ],
+  "analysis": {
+    "run_id": "6ff6e744-491f-4ee6-8c47-6f491a17ce74",
+    "timestamp_jst": "2025-08-10T21:52:39.445986+09:00",
+    "pair": "USDJPY",
+    "timeframes": {
+      "5m": {
+        "indicators": {
+          "current_price": 147.69299,
+          "ema25": 147.74056571350323,
+          "ema25_slope_deg": -27.62,
+          "atr20": 0.05,
+          "spread": 0.1,
+          "round_numbers": [
+            147.0,
+            147.5,
+            148.0,
+            148.5
+          ],
+          "build_up": {
+            "width_pips": 16.8,
+            "bars": 20,
+            "ema_inside": "True"
+          }
+        },
+        "setup": "No-Trade",
+        "rationale": [
+          "ATR too low (0.05p < 7p minimum)"
+        ]
+      },
+      "1h": {
+        "indicators": {
+          "current_price": 147.69299,
+          "ema25": 147.56951550803348,
+          "ema25_slope_deg": 36.72,
+          "atr20": 0.22,
+          "spread": 0.1,
+          "round_numbers": [
+            147.0,
+            147.5,
+            148.0,
+            148.5
+          ],
+          "build_up": {
+            "width_pips": 79.2,
+            "bars": 20,
+            "ema_inside": "True"
+          }
+        },
+        "setup": "No-Trade",
+        "rationale": [
+          "ATR too low (0.22p < 7p minimum)"
+        ]
+      }
+    },
+    "final_setup": "No-Trade",
+    "confidence": "low",
+    "ev_R": 0.0,
+    "status": "analyzed",
+    "rationale": [
+      "[5m] ATR too low (0.05p < 7p minimum)",
+      "[1h] ATR too low (0.22p < 7p minimum)",
+      "No valid setup found or timeframes disagree"
+    ],
+    "plan": {
+      "action": "wait",
+      "reason": "No valid setup"
+    },
+    "risk": {
+      "market_risk": "normal",
+      "execution_risk": "low",
+      "max_loss_R": 1.0
+    },
+    "charts": {
+      "5m": {
+        "key": "charts/USDJPY/2025-08-10/6ff6e744-491f-4ee6-8c47-6f491a17ce74_5m.png",
+        "url": "https://analyze-fx-455931011903-apne1.s3.amazonaws.com/charts/USDJPY/2025-08-10/6ff6e744-491f-4ee6-8c47-6f491a17ce74_5m.png?AWSAccessKeyId=AKIAWUJ43EM77N72LHF3&Signature=TKN3RcyZkAOS5ENNR4u%2BjrPOYYo%3D&Expires=1754833961"
+      },
+      "1h": {
+        "key": "charts/USDJPY/2025-08-10/6ff6e744-491f-4ee6-8c47-6f491a17ce74_1h.png",
+        "url": "https://analyze-fx-455931011903-apne1.s3.amazonaws.com/charts/USDJPY/2025-08-10/6ff6e744-491f-4ee6-8c47-6f491a17ce74_1h.png?AWSAccessKeyId=AKIAWUJ43EM77N72LHF3&Signature=GXJ4zdEm60BH2dul%2Bhs92X1mjiM%3D&Expires=1754833961"
+      }
+    }
+  },
+  "s3": {
+    "charts": {
+      "5m": {
+        "key": "charts/USDJPY/2025-08-10/6ff6e744-491f-4ee6-8c47-6f491a17ce74_5m.png",
+        "url": "https://analyze-fx-455931011903-apne1.s3.amazonaws.com/charts/USDJPY/2025-08-10/6ff6e744-491f-4ee6-8c47-6f491a17ce74_5m.png?AWSAccessKeyId=AKIAWUJ43EM77N72LHF3&Signature=TKN3RcyZkAOS5ENNR4u%2BjrPOYYo%3D&Expires=1754833961"
+      },
+      "1h": {
+        "key": "charts/USDJPY/2025-08-10/6ff6e744-491f-4ee6-8c47-6f491a17ce74_1h.png",
+        "url": "https://analyze-fx-455931011903-apne1.s3.amazonaws.com/charts/USDJPY/2025-08-10/6ff6e744-491f-4ee6-8c47-6f491a17ce74_1h.png?AWSAccessKeyId=AKIAWUJ43EM77N72LHF3&Signature=GXJ4zdEm60BH2dul%2Bhs92X1mjiM%3D&Expires=1754833961"
+      }
+    },
+    "json": {
+      "key": "charts/USDJPY/2025-08-10/6ff6e744-491f-4ee6-8c47-6f491a17ce74_analysis.json",
+      "url": "https://analyze-fx-455931011903-apne1.s3.amazonaws.com/charts/USDJPY/2025-08-10/6ff6e744-491f-4ee6-8c47-6f491a17ce74_analysis.json?AWSAccessKeyId=AKIAWUJ43EM77N72LHF3&Signature=4CXvw8jxeVJHAo3VOt5NCQMLcm8%3D&Expires=1754833961"
+    }
+  },
+  "slack_sent": true
+}

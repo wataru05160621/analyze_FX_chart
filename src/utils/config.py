@@ -2,7 +2,7 @@
 
 import os
 from typing import List, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -20,7 +20,7 @@ class Config:
     # Trading pairs
     pair: str = os.getenv("PAIR", "USDJPY")
     symbol: str = os.getenv("SYMBOL", "USD/JPY")
-    timeframes: List[str] = os.getenv("TIMEFRAMES", "5m,1h").split(",")
+    timeframes: List[str] = field(default_factory=lambda: os.getenv("TIMEFRAMES", "5m,1h").split(","))
     
     # Data source
     data_source: str = os.getenv("DATA_SOURCE", "twelvedata")

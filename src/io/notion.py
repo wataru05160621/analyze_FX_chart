@@ -76,6 +76,7 @@ class NotionClient:
         # Format title
         title = f"{pair} | {setup} | {timestamp[:16]}"
         
+        # Notionデータベースのプロパティに合わせて修正
         properties = {
             "Name": {
                 "title": [
@@ -86,65 +87,24 @@ class NotionClient:
                     }
                 ]
             },
-            "RunID": {
-                "rich_text": [
-                    {
-                        "text": {
-                            "content": run_id
-                        }
-                    }
-                ]
-            },
-            "Pair": {
-                "select": {
-                    "name": pair
-                }
-            },
-            "Setup": {
-                "select": {
-                    "name": setup
-                }
-            },
-            "Confidence": {
-                "select": {
-                    "name": confidence
-                }
-            },
-            "EV_R": {
-                "number": ev_r
-            },
-            "Status": {
-                "select": {
-                    "name": analysis.get("status", "analyzed")
-                }
-            }
-        }
-        
-        # Add timestamp if property exists
-        try:
-            properties["Timestamp"] = {
+            "Date": {
                 "date": {
                     "start": timestamp
                 }
-            }
-        except:
-            pass
-        
-        # Add Charts property if URLs available
-        if "charts" in analysis and analysis["charts"]:
-            files = []
-            for tf, chart_info in analysis["charts"].items():
-                if "url" in chart_info:
-                    files.append({
-                        "name": f"{tf}_chart.png",
-                        "external": {
-                            "url": chart_info["url"]
-                        }
-                    })
-            if files:
-                properties["Charts"] = {
-                    "files": files
+            },
+            "Status": {
+                "status": {
+                    "name": "Done" if setup != "No-Trade" else "Not started"
                 }
+            },
+            "Currency": {
+                "multi_select": [
+                    {
+                        "name": pair
+                    }
+                ]
+            }
+        }
         
         return properties
     

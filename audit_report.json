@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-08-10T21:26:24.123420",
+  "timestamp": "2025-08-10T21:37:01.971979",
   "region": "ap-northeast-1",
   "account_id": "455931011903",
   "checks": {
@@ -39,8 +39,11 @@
         "description": ""
       },
       "TWELVEDATA_API_KEY": {
-        "status": "MISSING",
-        "message": "Secret 'TWELVEDATA_API_KEY' not found"
+        "status": "OK",
+        "arn": "arn:aws:secretsmanager:ap-northeast-1:455931011903:secret:TWELVEDATA_API_KEY-VLcEdI",
+        "last_changed": "2025-08-10T21:34:23.070000+09:00",
+        "rotation_enabled": false,
+        "description": "TwelveData API key for FX Analysis"
       }
     },
     "s3": {
@@ -70,29 +73,66 @@
         "pending_tasks": 0
       },
       "task_definition": {
-        "status": "ERROR",
-        "message": "An error occurred (ClientException) when calling the DescribeTaskDefinition operation: Unable to describe task definition."
+        "status": "OK",
+        "family": "analyze-fx",
+        "revision": 3,
+        "cpu": "256",
+        "memory": "512",
+        "secrets_configured": 5,
+        "missing_secrets": [],
+        "log_driver": "awslogs",
+        "log_group": "/ecs/analyze-fx"
       }
     },
     "schedulers": {
       "fx-analyzer-0800-jst-dev": {
-        "status": "MISSING",
-        "message": "Scheduler 'fx-analyzer-0800-jst-dev' not found"
+        "status": "OK",
+        "state": "DISABLED",
+        "schedule_expression": "cron(0 23 ? * MON-FRI *)",
+        "role_arn": "arn:aws:iam::455931011903:role/analyze-fx-scheduler-role",
+        "task_definition": "arn:aws:ecs:ap-northeast-1:455931011903:task-definition/analyze-fx",
+        "subnets": [
+          "subnet-06fba36a849bb6647",
+          "subnet-02aef8bf85b9ceb0d"
+        ],
+        "security_groups": [
+          "sg-03cb601e40f6e32ac"
+        ],
+        "assign_public_ip": "ENABLED"
       },
       "fx-analyzer-0800-jst": {
-        "status": "MISSING",
-        "message": "Scheduler 'fx-analyzer-0800-jst' not found"
+        "status": "OK",
+        "state": "DISABLED",
+        "schedule_expression": "cron(0 23 ? * MON-FRI *)",
+        "role_arn": "arn:aws:iam::455931011903:role/analyze-fx-scheduler-role",
+        "task_definition": "arn:aws:ecs:ap-northeast-1:455931011903:task-definition/analyze-fx",
+        "subnets": [
+          "subnet-06fba36a849bb6647",
+          "subnet-02aef8bf85b9ceb0d"
+        ],
+        "security_groups": [
+          "sg-03cb601e40f6e32ac"
+        ],
+        "assign_public_ip": "ENABLED"
       }
     },
     "ecr": {
       "repository": "analyze-fx",
-      "status": "ERROR",
-      "message": "Repository 'analyze-fx' not found"
+      "status": "OK",
+      "uri": "455931011903.dkr.ecr.ap-northeast-1.amazonaws.com/analyze-fx",
+      "created_at": "2025-08-10T21:33:31.433000+09:00",
+      "latest_tag": {
+        "exists": false,
+        "message": "No 'latest' tag found"
+      }
     },
     "iam": {
       "task_role": {
         "status": "WARNING",
-        "message": "Role 'analyze-fx-task-role' not found"
+        "arn": "arn:aws:iam::455931011903:role/analyze-fx-task-role",
+        "policies": [],
+        "has_secrets_access": false,
+        "has_s3_access": false
       },
       "scheduler_role": {
         "status": "OK",

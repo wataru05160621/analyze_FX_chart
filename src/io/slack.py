@@ -175,7 +175,7 @@ class SlackClient:
             }
         })
         
-        # Add chart links if available
+        # Add chart links and images if available
         if chart_urls:
             chart_links = []
             for tf, url in chart_urls.items():
@@ -189,6 +189,18 @@ class SlackClient:
                         "text": f"*Charts:* {' | '.join(chart_links)}"
                     }
                 })
+                
+                # Add image blocks for each chart
+                for tf, url in chart_urls.items():
+                    blocks.append({
+                        "type": "image",
+                        "title": {
+                            "type": "plain_text",
+                            "text": f"{tf} Chart"
+                        },
+                        "image_url": url,
+                        "alt_text": f"{tf} chart for {pair}"
+                    })
         
         # Add Notion link if available
         if notion_url:

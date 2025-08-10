@@ -551,7 +551,7 @@ class AWSSetup:
                         },
                         'RetryPolicy': {
                             'MaximumRetryAttempts': 2,
-                            'MaximumEventAge': 3600
+                            'MaximumEventAgeInSeconds': 3600
                         }
                     },
                     State='DISABLED',  # Start in disabled state
