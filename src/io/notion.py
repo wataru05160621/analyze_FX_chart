@@ -94,7 +94,7 @@ class NotionClient:
             },
             "Status": {
                 "status": {
-                    "name": "Done" if setup != "No-Trade" else "Not started"
+                    "name": "Done" if setup != "No-Trade" else "To do"
                 }
             },
             "Currency": {
