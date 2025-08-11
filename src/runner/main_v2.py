@@ -120,7 +120,15 @@ class FXAnalysisRunnerV2:
             notion_url = None
             if self.notion_client and analysis["status"] != "failed":
                 try:
-                    logger.info("Creating Notion page with v2 contract")
+                    logger.info("Creating Notion page with v2 client")
+                    
+                    # Extract chart URLs for Notion
+                    chart_urls = {}
+                    if s3_results and "charts" in s3_results:
+                        for tf, info in s3_results["charts"].items():
+                            if "url" in info:
+                                chart_urls[tf] = info["url"]
+                    
                     notion_page_id = self.notion_client.create_analysis_page(analysis, chart_urls)
                     
                     # Generate Notion URL

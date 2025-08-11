@@ -340,52 +340,59 @@ class NotionClientV2:
             }
         })
         
-        # 6. Add Charts (5m and 1h)
-        if chart_urls:
-            blocks.append({
-                "object": "block",
-                "type": "heading_2",
-                "heading_2": {
-                    "rich_text": [{
-                        "type": "text",
-                        "text": {"content": "📈 チャート"}
-                    }]
-                }
-            })
-            
-            # Add 5m chart
-            if "5m" in chart_urls:
-                blocks.append({
-                    "object": "block",
-                    "type": "image",
-                    "image": {
-                        "type": "external",
-                        "external": {
-                            "url": chart_urls["5m"]
-                        },
-                        "caption": [{
-                            "type": "text",
-                            "text": {"content": "5分足チャート"}
-                        }]
-                    }
-                })
-            
-            # Add 1h chart
-            if "1h" in chart_urls:
-                blocks.append({
-                    "object": "block",
-                    "type": "image",
-                    "image": {
-                        "type": "external",
-                        "external": {
-                            "url": chart_urls["1h"]
-                        },
-                        "caption": [{
-                            "type": "text",
-                            "text": {"content": "1時間足チャート"}
-                        }]
-                    }
-                })
+        # 6. Add Charts (5m and 1h) - MANDATORY 2 images
+        blocks.append({
+            "object": "block",
+            "type": "heading_2",
+            "heading_2": {
+                "rich_text": [{
+                    "type": "text",
+                    "text": {"content": "📈 チャート"}
+                }]
+            }
+        })
+        
+        # Add 5m chart (mandatory)
+        chart_5m_url = chart_urls.get("5m") if chart_urls else None
+        if not chart_5m_url:
+            # Use placeholder if no chart available
+            chart_5m_url = "https://via.placeholder.com/1200x600/1a1a1a/808080?text=5m+Chart+Not+Available"
+        
+        blocks.append({
+            "object": "block",
+            "type": "image",
+            "image": {
+                "type": "external",
+                "external": {
+                    "url": chart_5m_url
+                },
+                "caption": [{
+                    "type": "text",
+                    "text": {"content": "5分足チャート"}
+                }]
+            }
+        })
+        
+        # Add 1h chart (mandatory)
+        chart_1h_url = chart_urls.get("1h") if chart_urls else None
+        if not chart_1h_url:
+            # Use placeholder if no chart available
+            chart_1h_url = "https://via.placeholder.com/1200x600/1a1a1a/808080?text=1h+Chart+Not+Available"
+        
+        blocks.append({
+            "object": "block",
+            "type": "image",
+            "image": {
+                "type": "external",
+                "external": {
+                    "url": chart_1h_url
+                },
+                "caption": [{
+                    "type": "text",
+                    "text": {"content": "1時間足チャート"}
+                }]
+            }
+        })
         
         # 7. Features JSON Block (IMPORTANT: Required by v2 contract)
         blocks.append({
