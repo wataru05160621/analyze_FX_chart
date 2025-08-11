@@ -59,7 +59,7 @@ cat > /tmp/dailystats_target.json <<EOF
         "TaskDefinitionArn": "${TASK_DEF_ARN}",
         "LaunchType": "FARGATE",
         "NetworkConfiguration": {
-            "AwsvpcConfiguration": {
+            "awsvpcConfiguration": {
                 "AssignPublicIp": "ENABLED",
                 "Subnets": [
                     "subnet-06fba36a849bb6647",

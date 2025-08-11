@@ -44,7 +44,7 @@ fi
 echo -e "${YELLOW}Step 2: Creating production scheduler (08:00 JST weekdays)...${NC}"
 
 PROD_SCHEDULER="analyze-fx-prod-0800-jst"
-SCHEDULE_EXPRESSION="cron(0 23 ? * MON-FRI *)"  # 23:00 UTC = 08:00 JST
+SCHEDULE_EXPRESSION="cron(0 23 ? * SUN-THU *)"  # 23:00 UTC(Sun-Thu) = 08:00 JST(Mon-Fri)
 
 # Create scheduler JSON payload
 cat > /tmp/scheduler_target.json <<EOF
@@ -55,7 +55,7 @@ cat > /tmp/scheduler_target.json <<EOF
         "TaskDefinitionArn": "arn:aws:ecs:${AWS_REGION}:${ACCOUNT_ID}:task-definition/${TASK_DEFINITION}",
         "LaunchType": "FARGATE",
         "NetworkConfiguration": {
-            "AwsvpcConfiguration": {
+            "awsvpcConfiguration": {
                 "AssignPublicIp": "ENABLED",
                 "Subnets": [
                     "subnet-06fba36a849bb6647",
