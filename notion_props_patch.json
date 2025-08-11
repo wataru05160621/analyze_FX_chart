@@ -1,0 +1,44 @@
+{
+  "properties": {
+    "ConfluenceCount": { "number": {} },
+    "NoTradeReason": {
+      "multi_select": {
+        "options": [
+          {"name":"ATR<7"},
+          {"name":"Spread>2"},
+          {"name":"NewsWindow"},
+          {"name":"BuildUpWeak"},
+          {"name":"Other"}
+        ]
+      }
+    },
+    "AdviceFlags": { "multi_select": {} },
+    "Env_1hTrend": {
+      "select": { "options": [
+        {"name":"Up"}, {"name":"Down"}, {"name":"Range"}
+      ]}
+    },
+    "BuildUpQuality": {
+      "select": { "options": [
+        {"name":"Strong"}, {"name":"Normal"}, {"name":"Weak"}
+      ]}
+    },
+    "RunId": { "rich_text": {} },
+    "AutoResult": {
+      "select": { "options": [
+        {"name":"TP"}, {"name":"SL"}, {"name":"Timeout"}, {"name":"NoFill"}
+      ]}
+    },
+    "ManualOverride": { "checkbox": {} },
+    "ManualResult": {
+      "select": { "options": [
+        {"name":"TP"}, {"name":"SL"}, {"name":"Timeout"}, {"name":"NoFill"}
+      ]}
+    },
+    "PnL_pips": { "number": {} },
+    "R_multiple": { "number": {} },
+    "EngineVersion": { "rich_text": {} },
+    "PromptHash": { "rich_text": {} },
+    "DataSource": { "rich_text": {} }
+  }
+}
