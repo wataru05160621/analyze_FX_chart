@@ -1,0 +1,21 @@
+{
+    "TransitionDefaultMinimumObjectSize": "all_storage_classes_128K",
+    "Rules": [
+        {
+            "Expiration": {
+                "Days": 90
+            },
+            "ID": "charts-lifecycle",
+            "Filter": {
+                "Prefix": "charts/"
+            },
+            "Status": "Enabled",
+            "Transitions": [
+                {
+                    "Days": 30,
+                    "StorageClass": "GLACIER"
+                }
+            ]
+        }
+    ]
+}

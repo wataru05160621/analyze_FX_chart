@@ -1,0 +1,217 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Health Check API for FX Analysis System
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues:
+      - dev
+      - prod
+
+Resources:
+  # Lambda Execution Role (Non-VPC)
+  HealthLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: HealthCheckPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:StartQuery
+                  - logs:GetQueryResults
+                  - logs:StopQuery
+                  - logs:FilterLogEvents
+                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/ecs/analyze-fx:*'
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource: !Sub 'arn:aws:s3:::analyze-fx-455931011903-apne1/*'
+              - Effect: Allow
+                Action:
+                  - scheduler:GetSchedule
+                  - scheduler:ListSchedules
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - cloudwatch:PutMetricData
+                Resource: '*'
+
+  # Lambda Function (Non-VPC)
+  HealthLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'fx-analysis-health-${Environment}'
+      Runtime: python3.11
+      Handler: lambda_handler.lambda_handler
+      Code:
+        ZipFile: |
+          import json
+          def lambda_handler(event, context):
+              return {
+                  'statusCode': 200,
+                  'body': json.dumps({'status': 'placeholder'})
+              }
+      Role: !GetAtt HealthLambdaRole.Arn
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          LOG_GROUP_NAME: /ecs/analyze-fx
+          S3_BUCKET: analyze-fx-455931011903-apne1
+          ENVIRONMENT: !Ref Environment
+
+  # API Gateway REST API
+  HealthAPI:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub 'fx-analysis-health-api-${Environment}'
+      Description: Health check API for FX Analysis System
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # API Resource (/health)
+  HealthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref HealthAPI
+      ParentId: !GetAtt HealthAPI.RootResourceId
+      PathPart: health
+
+  # GET Method
+  HealthMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref HealthAPI
+      ResourceId: !Ref HealthResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HealthLambda.Arn}/invocations'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+
+  # OPTIONS Method (CORS)
+  HealthOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref HealthAPI
+      ResourceId: !Ref HealthResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: ''
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  # Lambda Permission for API Gateway (修正3: 必須リソース)
+  ApiGatewayInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref HealthLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HealthAPI}/*/*'
+
+  # API Deployment (修正3: 必須リソース)
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - HealthMethod
+      - HealthOptionsMethod
+    Properties:
+      RestApiId: !Ref HealthAPI
+      Description: !Sub 'Deployment for ${Environment}'
+
+  # API Stage (修正3: 必須リソース)
+  ApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref HealthAPI
+      DeploymentId: !Ref ApiDeployment
+      StageName: !Ref Environment
+      Description: !Sub '${Environment} stage'
+
+  # CloudWatch Dashboard
+  HealthDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub 'fx-analysis-health-${Environment}'
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["FX/Health", "SuccessRate7d"],
+                  [".", "AvgExecutionTime", {"stat": "Average", "yAxis": "right"}]
+                ],
+                "period": 300,
+                "stat": "Average",
+                "region": "${AWS::Region}",
+                "title": "System Health Metrics"
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["FX/Health", "TotalRunsToday", {"stat": "Sum"}]
+                ],
+                "period": 3600,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Daily Execution Count"
+              }
+            }
+          ]
+        }
+
+Outputs:
+  HealthAPIURL:
+    Description: Health Check API URL
+    Value: !Sub 'https://${HealthAPI}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/health'
+    Export:
+      Name: !Sub 'fx-health-api-url-${Environment}'
+  
+  LambdaArn:
+    Description: Health Lambda ARN
+    Value: !GetAtt HealthLambda.Arn
+    Export:
+      Name: !Sub 'fx-health-lambda-arn-${Environment}'
