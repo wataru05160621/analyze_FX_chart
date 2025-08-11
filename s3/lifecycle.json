@@ -1,0 +1,40 @@
+{
+  "Rules": [
+    {
+      "ID": "charts-glacier-then-expire",
+      "Filter": {
+        "Prefix": "charts/"
+      },
+      "Status": "Enabled",
+      "Transitions": [
+        {
+          "Days": 30,
+          "StorageClass": "GLACIER"
+        }
+      ],
+      "Expiration": {
+        "Days": 90
+      }
+    },
+    {
+      "ID": "results-retain-180",
+      "Filter": {
+        "Prefix": "results/"
+      },
+      "Status": "Enabled",
+      "Expiration": {
+        "Days": 180
+      }
+    },
+    {
+      "ID": "stats-retain-365",
+      "Filter": {
+        "Prefix": "stats/"
+      },
+      "Status": "Enabled",
+      "Expiration": {
+        "Days": 365
+      }
+    }
+  ]
+}
