@@ -126,20 +126,11 @@ class NotionClientV2:
             "Currency": {
                 "multi_select": [{"name": analysis["pair"]}]
             },
-            "Timeframe": {
-                "select": {"name": analysis["timeframe"]}
-            },
-            "Setup": {
-                "select": {"name": setup}
-            },
-            "Confidence": {
-                "select": {"name": analysis["confidence"]}
-            },
-            "EV_R": {
-                "number": analysis["ev_R"]
-            },
             "ConfluenceCount": {
-                "number": analysis["confluence_count"]
+                "number": analysis.get("confluence_count", 0)
+            },
+            "R_multiple": {
+                "number": analysis.get("r_multiple", 0.0)
             },
             "BuildUpQuality": {
                 "select": {"name": build_up_quality}
