@@ -1,6 +1,7 @@
 """Enhanced Slack client with template-based notifications."""
 
 import json
+import os
 import requests
 from typing import Dict, Optional
 
@@ -138,8 +139,16 @@ class SlackClientV2:
         if len(summary) > 120:
             summary = summary[:117] + "..."
         
+        # Add session prefix if available
+        session = os.environ.get('SESSION', '')
+        session_prefix = ""
+        if session == 'tokyo_preopen':
+            session_prefix = "[TokyoPre] "
+        elif session == 'london_preopen':
+            session_prefix = "[LondonPre] "
+        
         main_text = (
-            f"*{analysis.get('pair', 'USDJPY')} {analysis.get('timeframe', '5m')}* "
+            f"{session_prefix}*{analysis.get('pair', 'USDJPY')} {analysis.get('timeframe', '5m')}* "
             f"{setup_name} EV {analysis.get('ev_R', 0):.2f}R — {summary}"
         )
         
@@ -220,6 +229,14 @@ class SlackClientV2:
         template = self.templates.get("no_trade", {})
         blocks = []
         
+        # Add session prefix if available
+        session = os.environ.get('SESSION', '')
+        session_prefix = ""
+        if session == 'tokyo_preopen':
+            session_prefix = "[TokyoPre] "
+        elif session == 'london_preopen':
+            session_prefix = "[LondonPre] "
+        
         # Format no-trade reasons
         reasons = analysis.get("no_trade_reasons", [])
         if reasons:
@@ -229,7 +246,7 @@ class SlackClientV2:
         else:
             reasons_text = "条件未達"
         
-        main_text = f"*No-Trade* 理由: {reasons_text}"
+        main_text = f"{session_prefix}*No-Trade* 理由: {reasons_text}"
         
         if notion_url:
             main_text += f" — <{notion_url}|Notion>"

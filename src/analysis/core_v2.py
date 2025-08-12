@@ -2,6 +2,7 @@
 
 import uuid
 import math
+import os
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional
 import pytz
@@ -48,8 +49,15 @@ class FXAnalyzerV2:
         Returns:
             Schema-compliant analysis result
         """
-        run_id = str(uuid.uuid4())
-        timestamp = datetime.now(self.jst).isoformat()
+        # Generate run_id with SESSION if available
+        jst_now = datetime.now(self.jst)
+        session = os.environ.get('SESSION', 'default')
+        if session != 'default':
+            run_id = f"{jst_now:%Y%m%d-%H%M}-{session}"
+        else:
+            run_id = str(uuid.uuid4())
+        
+        timestamp = jst_now.isoformat()
         
         # Initialize result structure
         result = {

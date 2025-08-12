@@ -48,6 +48,11 @@ load_last_config() {
 build_env_overrides() {
     local overrides='['
     
+    # Add SESSION if provided
+    if [ -n "${SESSION:-}" ]; then
+        overrides+="{\"name\":\"SESSION\",\"value\":\"$SESSION\"},"
+    fi
+    
     # Base overrides
     overrides+="{\"name\": \"RUN_MODE\", \"value\": \"$MODE\"}"
     

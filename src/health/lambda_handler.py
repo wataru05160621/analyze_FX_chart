@@ -262,25 +262,52 @@ def wait_for_query_results(logs_client, query_id: str, max_wait: int = 30) -> Li
 
 def get_next_scheduled_run(scheduler_client) -> str:
     """
-    Get next scheduled run time
+    Get next scheduled run times for both Tokyo and London
     """
     
+    schedules = []
+    
+    # Check Tokyo Pre-open scheduler
     try:
-        # Get main analysis scheduler
         response = scheduler_client.get_schedule(
-            Name='analyze-fx-prod-0800-jst'
+            Name='analyze-fx-tokyo-preopen'
         )
-        
-        # Parse schedule expression and timezone
-        schedule_expr = response.get('ScheduleExpression', '')
-        timezone = response.get('ScheduleExpressionTimezone', 'UTC')
-        
-        # For now, return the raw expression
-        # In production, calculate actual next run time
-        return f"Next run: {schedule_expr} ({timezone})"
-        
-    except Exception as e:
-        return f"Unable to determine next run: {str(e)}"
+        if response.get('State') == 'ENABLED':
+            schedule_expr = response.get('ScheduleExpression', '')
+            timezone = response.get('ScheduleExpressionTimezone', 'UTC')
+            schedules.append(f"Tokyo: {schedule_expr} ({timezone})")
+    except Exception:
+        pass
+    
+    # Check London Pre-open scheduler
+    try:
+        response = scheduler_client.get_schedule(
+            Name='analyze-fx-london-preopen'
+        )
+        if response.get('State') == 'ENABLED':
+            schedule_expr = response.get('ScheduleExpression', '')
+            timezone = response.get('ScheduleExpressionTimezone', 'UTC')
+            schedules.append(f"London: {schedule_expr} ({timezone})")
+    except Exception:
+        pass
+    
+    # Fallback to old scheduler if new ones not found
+    if not schedules:
+        try:
+            response = scheduler_client.get_schedule(
+                Name='analyze-fx-prod-0800-jst'
+            )
+            if response.get('State') == 'ENABLED':
+                schedule_expr = response.get('ScheduleExpression', '')
+                timezone = response.get('ScheduleExpressionTimezone', 'UTC')
+                schedules.append(f"Legacy: {schedule_expr} ({timezone})")
+        except Exception:
+            pass
+    
+    if schedules:
+        return " | ".join(schedules)
+    else:
+        return "No active schedulers found"
 
 
 def put_health_metrics(cloudwatch, metrics: Dict):

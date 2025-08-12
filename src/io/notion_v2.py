@@ -1,6 +1,7 @@
 """Enhanced Notion client with v2 contract support."""
 
 import json
+import os
 from datetime import datetime
 from typing import Dict, List, Optional
 from notion_client import Client
@@ -166,6 +167,18 @@ class NotionClientV2:
                 ]
             }
         }
+        
+        # Add Session property if SESSION environment variable is set
+        session = os.environ.get('SESSION', '')
+        if session:
+            # Map session values to Notion select options
+            session_map = {
+                'tokyo_preopen': 'TokyoPre',
+                'london_preopen': 'LondonPre'
+            }
+            properties["Session"] = {
+                "select": {"name": session_map.get(session, session)}
+            }
         
         # Add optional properties
         if no_trade_options:
