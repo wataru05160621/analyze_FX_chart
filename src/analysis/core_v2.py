@@ -3,11 +3,10 @@
 import uuid
 import math
 import os
-from datetime import datetime, timedelta
-from typing import Dict, List, Tuple, Optional
+from datetime import datetime
+from typing import Dict, List, Tuple
 import pytz
 import pandas as pd
-import numpy as np
 
 from src.utils.logger import get_logger
 from src.guards.linguistic import LinguisticGuard
@@ -105,30 +104,44 @@ class FXAnalyzerV2:
         filters, gate_passed, no_trade_reasons = self.apply_quality_gates(indicators_5m)
         result["filters"] = filters
         
-        if not gate_passed:
+        # Track if this is a No-Trade situation but continue analysis
+        is_no_trade = not gate_passed
+        if is_no_trade:
             result["no_trade_reasons"] = no_trade_reasons
             result["status"] = "no-trade"
-            return result
         
         # Step 3: Determine environment from 1h
         env_trend = self._determine_environment(indicators_1h)
         
         # Step 4: Determine setup based on environment and 5m data
-        setup, rationale = self._determine_setup_v2(indicators_5m, env_trend, df_5m)
-        result["setup"] = setup
-        result["rationale"] = rationale
+        # For No-Trade, find the best hypothetical setup for analysis
+        if is_no_trade:
+            # Find what setup WOULD have been chosen if quality gates passed
+            hypothetical_setup, hypothetical_rationale = self._determine_setup_v2(indicators_5m, env_trend, df_5m)
+            result["setup"] = "No-Trade"
+            result["hypothetical_setup"] = hypothetical_setup
+            result["rationale"] = hypothetical_rationale
+            result["analysis_mode"] = "hypothetical"
+        else:
+            setup, rationale = self._determine_setup_v2(indicators_5m, env_trend, df_5m)
+            result["setup"] = setup
+            result["rationale"] = rationale
+            result["analysis_mode"] = "live"
         
         # Step 5: Calculate confluence count
         confluence_count = len(rationale)
         result["confluence_count"] = confluence_count
         
-        # Step 6: Create trading plan if setup found
-        if setup != "No-Trade":
-            plan = self._create_plan(setup, indicators_5m)
+        # Step 6: Create trading plan (even for No-Trade as hypothetical)
+        # Use hypothetical setup if No-Trade, otherwise use actual setup
+        plan_setup = result.get("hypothetical_setup", result.get("setup"))
+        
+        if plan_setup and plan_setup != "No-Trade":
+            plan = self._create_plan(plan_setup, indicators_5m)
             result["plan"] = plan
             
             # Step 7: Calculate EV
-            ev_R = self._calculate_ev(setup, confluence_count, plan)
+            ev_R = self._calculate_ev(plan_setup, confluence_count, plan)
             result["ev_R"] = round(ev_R, 2)
             
             # Step 8: Determine confidence
@@ -146,7 +159,13 @@ class FXAnalyzerV2:
                 "position_size": 0.01  # Default micro lot
             }
             
-            result["status"] = "success"
+            # Mark hypothetical trades clearly
+            if is_no_trade:
+                result["plan"]["note"] = "HYPOTHETICAL - Quality gates not passed"
+                result["hypothetical_ev_R"] = result["ev_R"]
+                result["hypothetical_confidence"] = result["confidence"]
+            else:
+                result["status"] = "success"
         
         # Step 10: Apply linguistic guard to text fields
         result, advice_flags = self.linguistic_guard.check_dict(result)
@@ -242,12 +261,34 @@ class FXAnalyzerV2:
             filters["spread_ok"] = False
             no_trade_reasons.append(f"Spread too wide: {indicators.get('spread', 0):.1f}p > 2p")
         
-        # Gate 3: News window (simplified - would need news calendar API)
-        # For now, skip if it's around major session opens
-        current_hour = datetime.now(self.jst).hour
-        if current_hour in [9, 15, 22]:  # Tokyo, London, NY opens
+        # Gate 3: News window - Only restrict the first 30 minutes of session opens
+        # Since we run 30 minutes after open, we check for the actual volatile period
+        current_time = datetime.now(self.jst)
+        current_hour = current_time.hour
+        current_minute = current_time.minute
+        
+        # Define actual volatile windows (first 30 minutes of each session)
+        news_windows = [
+            (9, 0, 9, 30),    # Tokyo: 9:00-9:30
+            (15, 30, 16, 0),  # London: 15:30-16:00 (actual London open time)
+            (22, 0, 22, 30),  # NY: 22:00-22:30
+        ]
+        
+        in_news_window = False
+        for start_h, start_m, end_h, end_m in news_windows:
+            if start_h == end_h:
+                if current_hour == start_h and start_m <= current_minute < end_m:
+                    in_news_window = True
+                    break
+            else:  # Handles London case (15:30-16:00)
+                if (current_hour == start_h and current_minute >= start_m) or \
+                   (current_hour == end_h and current_minute < end_m):
+                    in_news_window = True
+                    break
+        
+        if in_news_window:
             filters["news_window_ok"] = False
-            no_trade_reasons.append("Within news window (session open)")
+            no_trade_reasons.append("Within news window (first 30min of session open)")
         
         # Gate 4: Build-up quality (need 2/3 conditions)
         build_up = indicators.get("build_up", {})

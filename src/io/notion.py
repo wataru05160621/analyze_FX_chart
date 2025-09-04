@@ -70,8 +70,10 @@ class NotionClient:
         timestamp = analysis.get("timestamp_jst", datetime.now().isoformat())
         pair = analysis.get("pair", config.pair)
         setup = analysis.get("final_setup", "No-Trade")
+        hypothetical_setup = analysis.get("hypothetical_setup", "")
         confidence = analysis.get("confidence", "low")
         ev_r = analysis.get("ev_R", 0.0)
+        hypothetical_ev = analysis.get("hypothetical_ev_R", 0.0)
         
         # Format title
         title = f"{pair} | {setup} | {timestamp[:16]}"
@@ -147,12 +149,23 @@ class NotionClient:
         })
         
         # Key metrics
-        metrics = [
-            f"Setup: {analysis.get('final_setup', 'No-Trade')}",
-            f"Confidence: {analysis.get('confidence', 'low')}",
-            f"Expected Value: {analysis.get('ev_R', 0):.2f}R",
-            f"Status: {analysis.get('status', 'analyzed')}"
-        ]
+        # Check if this is a hypothetical analysis (No-Trade with plan)
+        is_hypothetical = analysis.get('analysis_mode') == 'hypothetical'
+        
+        if is_hypothetical:
+            metrics = [
+                f"Setup: No-Trade (Hypothetical: {analysis.get('hypothetical_setup', 'N/A')})",
+                f"Hypothetical Confidence: {analysis.get('hypothetical_confidence', 'low')}",
+                f"Hypothetical EV: {analysis.get('hypothetical_ev_R', 0):.2f}R",
+                f"Status: No-Trade (Quality gates failed)"
+            ]
+        else:
+            metrics = [
+                f"Setup: {analysis.get('final_setup', 'No-Trade')}",
+                f"Confidence: {analysis.get('confidence', 'low')}",
+                f"Expected Value: {analysis.get('ev_R', 0):.2f}R",
+                f"Status: {analysis.get('status', 'analyzed')}"
+            ]
         
         blocks.append({
             "object": "block",
@@ -167,7 +180,37 @@ class NotionClient:
             }
         })
         
-        # Rationale section
+        # No-Trade reasons section (if applicable)
+        if "no_trade_reasons" in analysis and analysis["no_trade_reasons"]:
+            blocks.append({
+                "object": "block",
+                "type": "heading_2",
+                "heading_2": {
+                    "rich_text": [{
+                        "type": "text",
+                        "text": {
+                            "content": "No-Trade Reasons"
+                        }
+                    }]
+                }
+            })
+            
+            for reason in analysis["no_trade_reasons"]:
+                blocks.append({
+                    "object": "block",
+                    "type": "bulleted_list_item",
+                    "bulleted_list_item": {
+                        "rich_text": [{
+                            "type": "text",
+                            "text": {
+                                "content": f"❌ {reason}"
+                            }
+                        }]
+                    }
+                })
+        
+        # Rationale section (including hypothetical)
+        rationale_title = "Hypothetical Analysis" if is_hypothetical else "Analysis Rationale"
         if "rationale" in analysis and analysis["rationale"]:
             blocks.append({
                 "object": "block",
@@ -176,13 +219,14 @@ class NotionClient:
                     "rich_text": [{
                         "type": "text",
                         "text": {
-                            "content": "Analysis Rationale"
+                            "content": rationale_title
                         }
                     }]
                 }
             })
             
             for reason in analysis["rationale"][:10]:  # Limit to 10 items
+                prefix = "🔍 " if is_hypothetical else ""
                 blocks.append({
                     "object": "block",
                     "type": "bulleted_list_item",
@@ -190,7 +234,61 @@ class NotionClient:
                         "rich_text": [{
                             "type": "text",
                             "text": {
-                                "content": reason
+                                "content": f"{prefix}{reason}"
+                            }
+                        }]
+                    }
+                })
+        
+        # Hypothetical Trading Plan section (if No-Trade with plan)
+        if is_hypothetical and "plan" in analysis:
+            plan = analysis["plan"]
+            blocks.append({
+                "object": "block",
+                "type": "heading_2",
+                "heading_2": {
+                    "rich_text": [{
+                        "type": "text",
+                        "text": {
+                            "content": "📊 Hypothetical Trading Plan (For Analysis Only)"
+                        }
+                    }]
+                }
+            })
+            
+            blocks.append({
+                "object": "block",
+                "type": "callout",
+                "callout": {
+                    "rich_text": [{
+                        "type": "text",
+                        "text": {
+                            "content": f"Note: {plan.get('note', 'This is a hypothetical analysis. No actual trade was taken due to quality gate failures.')}"
+                        }
+                    }],
+                    "icon": {
+                        "emoji": "⚠️"
+                    }
+                }
+            })
+            
+            # Plan details
+            plan_details = [
+                f"Entry: {plan.get('entry', 'N/A')}",
+                f"Stop Loss: {plan.get('sl_pips', 'N/A')} pips",
+                f"Take Profit: {plan.get('tp_pips', 'N/A')} pips",
+                f"Risk/Reward: {analysis.get('risk', {}).get('r_multiple', 0):.1f}R"
+            ]
+            
+            for detail in plan_details:
+                blocks.append({
+                    "object": "block",
+                    "type": "bulleted_list_item",
+                    "bulleted_list_item": {
+                        "rich_text": [{
+                            "type": "text",
+                            "text": {
+                                "content": detail
                             }
                         }]
                     }

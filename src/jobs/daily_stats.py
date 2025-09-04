@@ -106,26 +106,16 @@ class DailyStatsJob:
         return summary
     
     def _query_todays_pages(self, start_date: datetime) -> List[Dict]:
-        """Query Notion for today's pages."""
+        """Query Notion for today's pages (including No-Trade for analysis)."""
         try:
-            # Query the database
+            # Query the database - Include ALL pages from today for comprehensive analysis
             response = self.notion_client.databases.query(
                 database_id=config.notion_db_id,
                 filter={
-                    "and": [
-                        {
-                            "property": "Date",
-                            "date": {
-                                "on_or_after": start_date.isoformat()
-                            }
-                        },
-                        {
-                            "property": "Setup",
-                            "select": {
-                                "does_not_equal": "No-Trade"
-                            }
-                        }
-                    ]
+                    "property": "Date",
+                    "date": {
+                        "on_or_after": start_date.isoformat()
+                    }
                 }
             )
             
@@ -153,7 +143,19 @@ class DailyStatsJob:
             setup = self._get_select_property(properties.get("Setup"))
             auto_result = self._get_select_property(properties.get("AutoResult"))
             
-            # Skip if already processed
+            # For No-Trade, track it for analysis but don't evaluate
+            if setup == "No-Trade":
+                logger.info(f"No-Trade setup tracked: {run_id}")
+                return {
+                    "run_id": run_id,
+                    "setup": setup,
+                    "result": "NoTrade",
+                    "pnl_pips": 0,
+                    "r_multiple": 0,
+                    "is_no_trade": True
+                }
+            
+            # Skip if already processed (for actual trades)
             if auto_result:
                 logger.info(f"Page already processed: {run_id}")
                 return None
@@ -187,7 +189,8 @@ class DailyStatsJob:
                 "setup": setup,
                 "result": result["auto_result"],
                 "pnl_pips": result["pnl_pips"],
-                "r_multiple": result["r_multiple"]
+                "r_multiple": result["r_multiple"],
+                "is_no_trade": False
             }
             
         except Exception as e:
@@ -329,8 +332,25 @@ class DailyStatsJob:
     
     def _update_statistics(self, results: List[Dict]):
         """Update setup statistics with Beta + EWMA."""
+        # Track No-Trade occurrences
+        if "no_trade_stats" not in self.stats:
+            self.stats["no_trade_stats"] = {
+                "total_count": 0,
+                "dates": [],
+                "reasons": {}
+            }
+        
         for result in results:
             setup = result["setup"]
+            
+            # Track No-Trade separately
+            if result.get("is_no_trade", False):
+                self.stats["no_trade_stats"]["total_count"] += 1
+                today = datetime.now(self.jst).date().isoformat()
+                if today not in self.stats["no_trade_stats"]["dates"]:
+                    self.stats["no_trade_stats"]["dates"].append(today)
+                continue
+            
             if setup not in self.stats["setups"]:
                 continue
             
@@ -379,13 +399,17 @@ class DailyStatsJob:
     
     def _create_summary(self, results: List[Dict]) -> Dict:
         """Create daily summary."""
-        total_pnl = sum(r["pnl_pips"] for r in results)
-        wins = [r for r in results if r["result"] == "TP"]
-        losses = [r for r in results if r["result"] == "SL"]
+        # Separate No-Trade from actual trades
+        no_trades = [r for r in results if r.get("is_no_trade", False)]
+        trades = [r for r in results if not r.get("is_no_trade", False)]
         
-        # Count by setup
+        total_pnl = sum(r["pnl_pips"] for r in trades)
+        wins = [r for r in trades if r["result"] == "TP"]
+        losses = [r for r in trades if r["result"] == "SL"]
+        
+        # Count by setup (excluding No-Trade)
         setup_counts = {}
-        for r in results:
+        for r in trades:
             setup = r["setup"]
             if setup not in setup_counts:
                 setup_counts[setup] = {"total": 0, "wins": 0}
@@ -402,15 +426,20 @@ class DailyStatsJob:
         return {
             "date": datetime.now(self.jst).date().isoformat(),
             "total_runs": len(results),
-            "setups_found": len([r for r in results if r["setup"] != "No-Trade"]),
-            "no_trades": 0,  # All processed are trades
+            "setups_found": len(trades),
+            "no_trades": len(no_trades),
+            "no_trade_percentage": round(len(no_trades) / len(results) * 100, 1) if results else 0,
             "failures": 0,
             "wins": len(wins),
             "losses": len(losses),
             "total_pnl_pips": round(total_pnl, 1),
-            "avg_ev": round(sum(r["r_multiple"] for r in results) / len(results), 2) if results else 0,
+            "avg_ev": round(sum(r["r_multiple"] for r in trades) / len(trades), 2) if trades else 0,
             "top_setup": top_setup,
-            "setup_performance": setup_counts
+            "setup_performance": setup_counts,
+            "no_trade_analysis": {
+                "count": len(no_trades),
+                "run_ids": [nt["run_id"] for nt in no_trades]
+            }
         }
     
     def _get_text_property(self, prop: Optional[Dict]) -> Optional[str]:
