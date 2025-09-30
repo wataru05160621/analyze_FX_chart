@@ -1,0 +1,102 @@
+{
+  "schedules": [
+    {
+      "name": "fx-analyzer-tokyo-30min-after",
+      "description": "FX Analysis 30 minutes after Tokyo market open (9:30 JST)",
+      "schedule_expression": "cron(30 9 ? * MON-FRI *)",
+      "schedule_expression_timezone": "Asia/Tokyo",
+      "flexible_time_window": {
+        "mode": "OFF"
+      },
+      "state": "ENABLED",
+      "target": {
+        "arn": "arn:aws:ecs:ap-northeast-1:455931011903:cluster/analyze-fx-cluster",
+        "role_arn": "arn:aws:iam::455931011903:role/service-role/Amazon_EventBridge_Scheduler_ECS_a2bab3de69",
+        "ecs_parameters": {
+          "task_definition_arn": "arn:aws:ecs:ap-northeast-1:455931011903:task-definition/analyze-fx",
+          "launch_type": "FARGATE",
+          "network_configuration": {
+            "awsvpc_configuration": {
+              "assign_public_ip": "ENABLED",
+              "subnets": [
+                "subnet-06fba36a849bb6647",
+                "subnet-02aef8bf85b9ceb0d"
+              ],
+              "security_groups": [
+                "sg-03cb601e40f6e32ac"
+              ]
+            }
+          },
+          "task_count": 1,
+          "platform_version": "LATEST",
+          "overrides": {
+            "containerOverrides": [
+              {
+                "name": "analyze-fx",
+                "environment": [
+                  {
+                    "name": "SESSION",
+                    "value": "Tokyo"
+                  },
+                  {
+                    "name": "ENGINE_VERSION",
+                    "value": "v2.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "fx-analyzer-london-30min-after",
+      "description": "FX Analysis 30 minutes after London market open (16:00 JST)",
+      "schedule_expression": "cron(0 16 ? * MON-FRI *)",
+      "schedule_expression_timezone": "Asia/Tokyo",
+      "flexible_time_window": {
+        "mode": "OFF"
+      },
+      "state": "ENABLED",
+      "target": {
+        "arn": "arn:aws:ecs:ap-northeast-1:455931011903:cluster/analyze-fx-cluster",
+        "role_arn": "arn:aws:iam::455931011903:role/service-role/Amazon_EventBridge_Scheduler_ECS_a2bab3de69",
+        "ecs_parameters": {
+          "task_definition_arn": "arn:aws:ecs:ap-northeast-1:455931011903:task-definition/analyze-fx",
+          "launch_type": "FARGATE",
+          "network_configuration": {
+            "awsvpc_configuration": {
+              "assign_public_ip": "ENABLED",
+              "subnets": [
+                "subnet-06fba36a849bb6647",
+                "subnet-02aef8bf85b9ceb0d"
+              ],
+              "security_groups": [
+                "sg-03cb601e40f6e32ac"
+              ]
+            }
+          },
+          "task_count": 1,
+          "platform_version": "LATEST",
+          "overrides": {
+            "containerOverrides": [
+              {
+                "name": "analyze-fx",
+                "environment": [
+                  {
+                    "name": "SESSION",
+                    "value": "London"
+                  },
+                  {
+                    "name": "ENGINE_VERSION",
+                    "value": "v2.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

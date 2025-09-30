@@ -1,0 +1,24 @@
+{
+  "name": "analyze_fx_chart",
+  "version": "1.0.0",
+  "description": "AWS ECS Fargate上で動作する自動FX分析システム。TwelveData APIからデータを取得し、品質ゲートを適用した分析を実行、Notion/Slack/S3へ結果を出力します。",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wataru05160621/analyze_FX_chart.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/wataru05160621/analyze_FX_chart/issues"
+  },
+  "homepage": "https://github.com/wataru05160621/analyze_FX_chart#readme"
+}
